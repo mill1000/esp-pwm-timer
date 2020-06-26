@@ -10,6 +10,7 @@
 #include <string>
 
 #include "wifi.h"
+#include "led.h"
 #include "schedule.h"
 
 #define TAG "Main"
@@ -86,6 +87,9 @@ extern "C" void app_main()
 
   Schedule schedule;
 
+  // Init LED peripherals
+  ledInit();
+
   // Wait for initial time sync
   xEventGroupWaitBits(mainEventGroup, MAIN_EVENT_SYSTEM_TIME_UPDATED, pdTRUE, pdFALSE, portMAX_DELAY);
 
@@ -117,6 +121,22 @@ extern "C" void app_main()
       // Reset timer for next schedule event
       if (xTimerChangePeriod(scheduleTimer, pdMS_TO_TICKS(delta * 1000), pdMS_TO_TICKS(1000)) != pdPASS)
         ESP_LOGE(TAG, "Failed to update schedule timer for next event.");
+
+      // Pull the expected TOD from the timer ID
+      Schedule::time_of_day_t expectedTOD = (Schedule::time_of_day_t) pvTimerGetTimerID(scheduleTimer);
+
+      // Save the "event ID" of the next event
+      vTimerSetTimerID(scheduleTimer, (void*) next);
+
+      if (abs(tod - expectedTOD) > 5 && expectedTOD != Schedule::INVALID_TOD) // Ignore init conditions
+        ESP_LOGW(TAG, "Expected TOD and actual TOD differ by more than 5 seconds.");
+
+      // Execute state changes for TOD
+      for (auto pair : schedule[expectedTOD])
+      {
+        ESP_LOGI(TAG, "Setting channel %d to %f", pair.first, pair.second);
+        ledSetIntensity((ledc_channel_t) pair.first, pair.second);
+      }
     }
   }
 
