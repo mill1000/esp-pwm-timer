@@ -99,6 +99,28 @@ extern "C" void app_main()
 
     if (events & MAIN_EVENT_SYSTEM_TIME_UPDATED)
     {
+      // Calculate time of day, and delta to next scheduled event
+      Schedule::time_of_day_t tod = Schedule::get_time_of_day(time(NULL));
+      Schedule::time_of_day_t delta = Schedule::delta(schedule.next(tod), tod);
+
+      // If invalid TOD don't do anything
+      if (delta == Schedule::INVALID_TOD)
+        continue;
+
+      // Calculate the error between the timer's expiration and expected time delta
+      TickType_t remainingTicks = xTimerGetExpiryTime(scheduleTimer) - xTaskGetTickCount();
+      double error = delta - (remainingTicks / (double) pdMS_TO_TICKS(1000));
+
+      ESP_LOGD(TAG, "System time updated. Timer error: %f", error);
+
+      if (abs(error) > Schedule::MAX_SCHEDULE_ERROR)
+      {
+        ESP_LOGW(TAG, "Timer delta and actual delta differ by more than %d seconds. Updating timer.", Schedule::MAX_SCHEDULE_ERROR);
+
+        // Reset event ID and trigger timer update
+        vTimerSetTimerID(scheduleTimer, (void*) Schedule::INVALID_TOD);
+        xEventGroupSetBits(mainEventGroup, MAIN_EVENT_LED_TIMER_EXPIRED);
+      }
     }
 
     if (events & MAIN_EVENT_LED_TIMER_EXPIRED)
@@ -128,8 +150,8 @@ extern "C" void app_main()
       // Save the "event ID" of the next event
       vTimerSetTimerID(scheduleTimer, (void*) next);
 
-      if (abs(tod - expectedTOD) > 5 && expectedTOD != Schedule::INVALID_TOD) // Ignore init conditions
-        ESP_LOGW(TAG, "Expected TOD and actual TOD differ by more than 5 seconds.");
+      if (abs(tod - expectedTOD) > Schedule::MAX_SCHEDULE_ERROR && expectedTOD != Schedule::INVALID_TOD) // Ignore init conditions
+        ESP_LOGW(TAG, "Expected TOD and actual TOD differ by more than %d seconds.", Schedule::MAX_SCHEDULE_ERROR);
 
       // Execute state changes for TOD
       for (auto pair : schedule[expectedTOD])

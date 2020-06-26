@@ -23,6 +23,7 @@ class Schedule
   typedef std::map<led_channel_t, led_intensity_t> state_change_map_t;
 
   static constexpr time_of_day_t INVALID_TOD = (time_of_day_t) -1;
+  static constexpr int MAX_SCHEDULE_ERROR = 5; // 5 seconds
 
   void insert(time_of_day_t time, led_channel_t channel, led_intensity_t intensity)
   {
