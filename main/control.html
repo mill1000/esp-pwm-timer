@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>LED Setup</title>
+<style>
+.tabulator-col-title {  text-align: center; }
+</style>
+<link href="https://unpkg.com/tabulator-tables@4.7.0/dist/css/tabulator.min.css" rel="stylesheet">
+<script type="text/javascript" src="https://unpkg.com/tabulator-tables@4.7.0/dist/js/tabulator.min.js"></script>
+</head>
+<body>
+<div id="channelTable"></div><br/>
+<button id="addRow" onclick="scheduleTable.addRow()">Add Time</button><br/>
+<div id="scheduleTable"></div>
+<script type="text/javascript">
+// Workaround issue #2858 https://github.com/olifolkerd/tabulator/issues/2858
+Tabulator.prototype.moduleBindings.edit.prototype.clearEdited = function (cell) {
+  if (cell.modules.edit && cell.modules.edit.edited) {
+    if (cell.modules.validate && cell.modules.validate.invalid) {
+      cell.modules.validate.invalid = false;
+    }
+
+    let editIndex = this.editedCells.indexOf(cell);
+
+    if (editIndex > -1) {
+      this.editedCells.splice(editIndex, 1);
+    }
+  }
+};
+
+// Class to represent a channel configuration
+class Channel {
+  constructor(index) {
+    this.id = index;
+    this.name = "Channel " + index;
+    this.gpio = null;
+    this.enabled = false;
+  }
+
+  generateColumnDefinition() {
+    // Generate a Tabulator column def
+    return {
+      title: "Channel " + this.id + "<br/>" + this.name,
+      field: "intensity" + this.id,
+      editor: "number", editorParams: { min: 0, max: 100, step: 10, mask: "999" },
+      validator: "max:100",
+      hozAlign: "center",
+    };
+  }
+
+  get valid() { return this.gpio ? true : false; }
+}
+
+function updateScheduleColumns() {
+  // Create column definitions for each enabled channel
+  let newColumns = channels.filter(c => c.enabled).map(c => c.generateColumnDefinition());
+  scheduleTable.setColumns(columnTemplate.concat(newColumns));
+}
+
+// Initalize an array of 8 channels
+var channels = Array.from(Array(8).keys()).map(x => new Channel(x));
+
+// Define the channel table
+var channelTable = new Tabulator("#channelTable", {
+  headerSort: false, // Don't allow sorting
+  reactiveData: true, // Update data source as table is editted
+  data: channels,
+  layout: "fitDataTable",
+  columns: [
+    { title: "ID", field: "id" },
+    { title: "Name", field: "name", minWidth: "200px", editor: "input" },
+    {
+      title: "GPIO", field: "gpio", minWidth: "60px", editor: "number", editorParams: { min: 0, max: 31, mask: "99" }, validator: ["unique", "max:31"],
+      cellEdited: (c) => { if (!c.getData().valid) c.getRow().getCell("enabled").setValue(false) },
+      tooltip: (c) => !c.isValid() ? "GPIO value must be unique and between 0-31" : "",
+    },
+    {
+      title: "Enabled", field: "enabled", formatter: "tickCross", hozAlign: "center",
+      cellClick: (e, c) => { if (c.getData().valid) c.setValue(!c.getValue()) },
+      tooltip: (c) => !c.getData().valid ? "GPIO must be assigned to enable channel." : "",
+    }
+  ],
+  dataEdited: updateScheduleColumns, // Trigger schedule column update whenever this table is changed
+  validationMode: "highlight",
+  tooltipGenerationMode:"hover",
+});
+
+var schedule = [];
+
+// Template for first 2 columns of schedule table
+var columnTemplate = [
+  { title: "Remove", formatter: "buttonCross", hozAlign: "center", cellClick: (e, cell) => cell.getRow().delete() },
+  { title: "Time Of Day", field: "tod", editor: "input", editorParams: { mask: "99:99" } },
+];
+
+var scheduleTable = new Tabulator("#scheduleTable", {
+  headerSort: false,
+  reactiveData: true, // Update data source as table is editted
+  data: schedule,
+  layout: "fitDataTable",
+  columns: columnTemplate,
+  validationMode: "highlight"
+});
+</script>
+</body>
+</html>
