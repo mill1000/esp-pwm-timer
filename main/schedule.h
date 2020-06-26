@@ -63,7 +63,7 @@ class Schedule
   }
 
   private:
-    static constexpr int seconds_per_day = 60;
+    static constexpr int seconds_per_day = 86400;
 
     std::map<time_of_day_t, state_change_map_t> schedule;
 };
