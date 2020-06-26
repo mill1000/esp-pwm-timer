@@ -22,6 +22,8 @@ class Schedule
   // Short-hand for channel->intensity map
   typedef std::map<led_channel_t, led_intensity_t> state_change_map_t;
 
+  static constexpr time_of_day_t INVALID_TOD = (time_of_day_t) -1;
+
   void insert(time_of_day_t time, led_channel_t channel, led_intensity_t intensity)
   {
     schedule[time][channel] = intensity;
@@ -29,6 +31,9 @@ class Schedule
 
   time_of_day_t next(time_of_day_t now) const
   {
+    if (schedule.empty())
+      return INVALID_TOD;
+
     auto it = schedule.upper_bound(now);
 
     if (it != schedule.end())
@@ -59,6 +64,9 @@ class Schedule
 
   static time_of_day_t delta(time_of_day_t next, time_of_day_t prev)
   {
+    if (next == INVALID_TOD || prev == INVALID_TOD)
+      return INVALID_TOD;
+
     return ((next - prev) + seconds_per_day) % seconds_per_day;
   }
 

@@ -70,7 +70,7 @@ extern "C" void app_main()
     ESP_LOGE(TAG, "Failed to create main event group.");
 
   // Construct a timer to handle the scheduled events
-  TimerHandle_t scheduleTimer = xTimerCreate("ScheduleTimer", pdMS_TO_TICKS(1000), false, (void*) INT32_MAX, 
+  TimerHandle_t scheduleTimer = xTimerCreate("ScheduleTimer", pdMS_TO_TICKS(1000), false, (void*) Schedule::INVALID_TOD, 
     [](TimerHandle_t t) {
       xEventGroupSetBits(mainEventGroup, MAIN_EVENT_LED_TIMER_EXPIRED);
     });
@@ -102,6 +102,13 @@ extern "C" void app_main()
       // Calculate time of day, next TOD and delta to next scheduled event
       Schedule::time_of_day_t tod = Schedule::get_time_of_day(time(NULL));
       Schedule::time_of_day_t next = schedule.next(tod);
+
+      // If invalid TOD don't do anything
+      if (next == Schedule::INVALID_TOD)
+      {
+        ESP_LOGW(TAG, "Invalid TOD. Empty schedule?");
+        continue;
+      }
 
       Schedule::time_of_day_t delta = Schedule::delta(next, tod);
 
