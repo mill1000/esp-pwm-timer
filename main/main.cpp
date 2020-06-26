@@ -10,11 +10,14 @@
 #include <string>
 
 #include "wifi.h"
+#include "schedule.h"
+
 #define TAG "Main"
 
 typedef enum
 {
   MAIN_EVENT_SYSTEM_TIME_UPDATED = 1 << 0,
+  MAIN_EVENT_LED_TIMER_EXPIRED   = 1 << 1,
   MAIN_EVENT_ALL                 = 0x00FFFFFF, // 24 bits max
 } MAIN_EVENT;
 
@@ -66,8 +69,22 @@ extern "C" void app_main()
   if (mainEventGroup == NULL)
     ESP_LOGE(TAG, "Failed to create main event group.");
 
+  // Construct a timer to handle the scheduled events
+  TimerHandle_t scheduleTimer = xTimerCreate("ScheduleTimer", pdMS_TO_TICKS(1000), false, (void*) INT32_MAX, 
+    [](TimerHandle_t t) {
+      xEventGroupSetBits(mainEventGroup, MAIN_EVENT_LED_TIMER_EXPIRED);
+    });
+
+  if (scheduleTimer == NULL)
+    ESP_LOGE(TAG, "Failed to create schedule timer.");
+  
+  if (xTimerStart(scheduleTimer, pdMS_TO_TICKS(1000)) != pdPASS)
+    ESP_LOGE(TAG, "Failed to start schedule timer.");
+
   // Configure NTP for MST/MDT
   sntpInit("MST7MDT,M3.2.0,M11.1.0");
+
+  Schedule schedule;
 
   // Wait for initial time sync
   xEventGroupWaitBits(mainEventGroup, MAIN_EVENT_SYSTEM_TIME_UPDATED, pdTRUE, pdFALSE, portMAX_DELAY);
@@ -79,5 +96,21 @@ extern "C" void app_main()
     if (events & MAIN_EVENT_SYSTEM_TIME_UPDATED)
     {
     }
+
+    if (events & MAIN_EVENT_LED_TIMER_EXPIRED)
+    {
+      // Calculate time of day, next TOD and delta to next scheduled event
+      Schedule::time_of_day_t tod = Schedule::get_time_of_day(time(NULL));
+      Schedule::time_of_day_t next = schedule.next(tod);
+
+      Schedule::time_of_day_t delta = Schedule::delta(next, tod);
+
+      ESP_LOGI(TAG, "Timer update. TOD: %ld, Next: %ld, Delta: %ld", tod, next, delta);
+
+      // Reset timer for next schedule event
+      if (xTimerChangePeriod(scheduleTimer, pdMS_TO_TICKS(delta * 1000), pdMS_TO_TICKS(1000)) != pdPASS)
+        ESP_LOGE(TAG, "Failed to update schedule timer for next event.");
+    }
   }
+
 }
