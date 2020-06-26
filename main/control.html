@@ -6,8 +6,14 @@
 <style>
 .tabulator-col-title {  text-align: center; }
 </style>
+<!-- Tabulator CDN -->
 <link href="https://unpkg.com/tabulator-tables@4.7.0/dist/css/tabulator.min.css" rel="stylesheet">
 <script type="text/javascript" src="https://unpkg.com/tabulator-tables@4.7.0/dist/js/tabulator.min.js"></script>
+<!-- flatpickr CDN -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<!-- moment.js CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.27.0/moment.min.js"></script>
 </head>
 <body>
 <div id="channelTable"></div><br/>
@@ -70,29 +76,58 @@ var channelTable = new Tabulator("#channelTable", {
   columns: [
     { title: "ID", field: "id" },
     { title: "Name", field: "name", minWidth: "200px", editor: "input" },
-    {
-      title: "GPIO", field: "gpio", minWidth: "60px", editor: "number", editorParams: { min: 0, max: 31, mask: "99" }, validator: ["unique", "max:31"],
-      cellEdited: (c) => { if (!c.getData().valid) c.getRow().getCell("enabled").setValue(false) },
-      tooltip: (c) => !c.isValid() ? "GPIO value must be unique and between 0-31" : "",
+    { title: "GPIO", field: "gpio", minWidth: "60px", editor: "number", editorParams: { min: 0, max: 31, mask: "99" }, validator: ["unique", "max:31"],
+        cellEdited: (c) => { if (!c.getData().valid) c.getRow().getCell("enabled").setValue(false) },
+        tooltip: (c) => !c.isValid() ? "GPIO value must be unique and between 0-31" : "",
     },
-    {
-      title: "Enabled", field: "enabled", formatter: "tickCross", hozAlign: "center",
-      cellClick: (e, c) => { if (c.getData().valid) c.setValue(!c.getValue()) },
-      tooltip: (c) => !c.getData().valid ? "GPIO must be assigned to enable channel." : "",
+    { title: "Enabled", field: "enabled", formatter: "tickCross", hozAlign: "center",
+        cellClick: (e, c) => { if (c.getData().valid) c.setValue(!c.getValue()) },
+        tooltip: (c) => !c.getData().valid ? "GPIO must be assigned to enable channel." : "",
     }
   ],
   dataEdited: updateScheduleColumns, // Trigger schedule column update whenever this table is changed
   validationMode: "highlight",
-  tooltipGenerationMode:"hover",
+  tooltipGenerationMode: "hover",
 });
 
 var schedule = [];
 
+function timeEditor(cell, onRendered, success, cancel, editorParams) {
+  let editor = document.createElement("input");
+
+  editor.setAttribute("id", "timepicker");
+  editor.setAttribute("type", "time");
+
+  onRendered(function () {
+    // Attach a time picker tothe editor
+    var picker = flatpickr("#" + editor.id, {
+      enableTime: true,
+      noCalendar: true,
+      dateFormat: "H:i",
+      defaultDate: cell.getValue(),
+      onClose: () => success(editor.value),
+    });
+
+    // Open the editor
+    picker.open();
+
+    // No idea what this does
+    editor.style.css = "100%";
+  });
+
+  return editor;
+}
+
 // Template for first 2 columns of schedule table
-var columnTemplate = [
-  { title: "Remove", formatter: "buttonCross", hozAlign: "center", cellClick: (e, cell) => cell.getRow().delete() },
-  { title: "Time Of Day", field: "tod", editor: "input", editorParams: { mask: "99:99" } },
-];
+  var columnTemplate = [
+    { title: "Remove", formatter: "buttonCross", hozAlign: "center", cellClick: (e, cell) => cell.getRow().delete() },
+    { title: "Time Of Day", field: "tod", editor: timeEditor, headerSort: true, sorter: "time", 
+      sorterParams: {
+        format: "HH:mm",
+        alignEmptyValues: "bottom",
+      }
+    },
+  ];
 
 var scheduleTable = new Tabulator("#scheduleTable", {
   headerSort: false,
@@ -100,7 +135,8 @@ var scheduleTable = new Tabulator("#scheduleTable", {
   data: schedule,
   layout: "fitDataTable",
   columns: columnTemplate,
-  validationMode: "highlight"
+  validationMode: "highlight",
+  movableRows: true,
 });
 </script>
 </body>
