@@ -210,8 +210,9 @@ function timeEditor(cell, onRendered, success, cancel, editorParams) {
 // Template for first 2 columns of schedule table
 var columnTemplate = [
   { title: "Remove", formatter: "buttonCross", hozAlign: "center", cellClick: (e, cell) => cell.getRow().delete() },
-  { title: "Time Of Day", field: "tod", editor: timeEditor, headerSort: true, sorter: "time", validator: "unique",
+  { title: "Time Of Day", field: "tod", editor: timeEditor, headerSort: true, sorter: "time", validator: ["unique", "required"],
     cellEdited: (c) => c.getColumn().validate(),
+    tooltip: (c) => !c.isValid() ? "Time Of Day must be set and unique." : "",
     sorterParams: {
       format: "HH:mm",
       alignEmptyValues: "bottom",
@@ -226,6 +227,7 @@ var scheduleTable = new Tabulator("#scheduleTable", {
   layout:"fitDataFill",
   columns: columnTemplate,
   validationMode: "highlight",
+  tooltipGenerationMode: "hover",
   movableRows: true,
 });
 </script>
