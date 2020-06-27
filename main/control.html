@@ -6,7 +6,7 @@
 <style>
 .tabulator-col-title {  text-align: center;}
 .container {display: flex; width:auto; justify-content: space-evenly; padding-left:5%; padding-right:5%}
-#systemTable {width:40%; margin-right:5%}
+#timerTable {width:40%; margin-right:5%}
 #channelTable {width:60%}
 #scheduleTable {width: 100%;}
 </style>
@@ -21,10 +21,15 @@
 </head>
 <body>
 <div class="container">
-<div id="systemTable"></div><div id="channelTable"></div>
+<div id="timerTable"></div><div id="channelTable"></div>
 </div>
 <br/>
-<button id="addRow" onclick="scheduleTable.addRow()">Add Time</button><br/>
+<div class="container"></div>
+<button onclick="scheduleTable.addRow()">Add Time</button>
+<button onclick="save()">Save</button>
+<span id="status"></span>
+</div>
+<br/>
 <div class="container">
 <div id="scheduleTable"></div>
 </div>
@@ -75,10 +80,17 @@ var Timers = {
   get_name: function(id) {
     return id !== "" ? this._timers[id].name : "";
   },
+
+  get dictionary() {
+    // Fetch the timer table as a dictionary
+    let obj = {};
+    this.all.forEach(t => obj[t.id] = t);
+    return obj;
+  },
 }
 
 // Define the system config table
-var systemTable = new Tabulator("#systemTable", {
+var timerTable = new Tabulator("#timerTable", {
   headerSort: false, // Don't allow sorting
   reactiveData: true, // Update data source as table is editted
   data: Timers.all,
@@ -121,7 +133,7 @@ class Channel {
     // Generate a Tabulator column def
     return {
       title: "Channel " + this.id + "<br/>" + this.name,
-      field: "intensity" + this.id,
+      field: "" + this.id, // int -> string
       editor: "number", editorParams: { min: 0, max: 100, step: 10, mask: "999" },
       validator: "max:100",
       hozAlign: "center",
@@ -146,6 +158,12 @@ var Channels = {
 
   get columns() {
     return this.enabled.map(c => c.columnDefinition);
+  },
+
+  get dictionary() {
+    let obj = {};
+    this.all.forEach(c => obj[c.id] = c);
+    return obj;
   },
 }
 
@@ -192,7 +210,7 @@ function timeEditor(cell, onRendered, success, cancel, editorParams) {
 
   onRendered(function () {
     // Attach a time picker tothe editor
-    var picker = flatpickr("#" + editor.id, {
+    let picker = flatpickr("#" + editor.id, {
       enableTime: true,
       noCalendar: true,
       dateFormat: "H:i",
@@ -230,6 +248,82 @@ var scheduleTable = new Tabulator("#scheduleTable", {
   tooltipGenerationMode: "hover",
   movableRows: true,
 });
+
+
+var Status = {
+  _element: document.getElementById("status"),
+
+  set: function (message) {
+    this._element.innerHTML = message;
+  },
+
+  set_success: function (message) {
+    this.set(message);
+  },
+
+  set_error: function (message) {
+    this.set("Save failed: " + message);
+  },
+}
+
+function sendJsonXhrRequest(json, callback) {
+  if (typeof josn != "string")
+    json = JSON.stringify(json);
+
+  let xhr = new XMLHttpRequest();
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState == XMLHttpRequest.DONE) {
+      callback(xhr.status)
+    }
+  };
+
+  xhr.open("POST", window.location.href + "/?action=set");
+  xhr.timeout = 5000;
+  xhr.setRequestHeader("Content-Type", "application/json");
+  xhr.send(json);
+}
+
+function save() {
+  if (timerTable.getInvalidCells().length)
+  {
+    Status.set_error("Invalid timer setup. Please fix errors.");
+    return;
+  }
+
+  if (channelTable.getInvalidCells().length)
+  {
+    Status.set_error("Invalid channel setup. Please fix errors.");
+    return;
+  }
+
+  if (scheduleTable.getInvalidCells().length)
+  {
+    Status.set_error("Invalid schedule. Please fix errors.");
+    return;
+  }
+
+  let settings = {};
+  settings.timers = Timers.dictionary;
+  settings.channels = Channels.dictionary;
+  settings.schedule = scheduleTable.getData();
+
+  console.log("Timers:" + JSON.stringify(settings.timers));
+  console.log("Channels:" + JSON.stringify(settings.channels));
+  console.log("Schedule:" + JSON.stringify(settings.schedule));
+
+  function setCallback(status) {
+    if (status == 200)
+      Status.set_success("Complete.");
+    else {
+      message = "Failed. Error: ";
+      message += (status != 0) ? xhr.responseText : "Timeout";
+      Status.set_error(message);
+    }
+  }
+
+  Status.set("Sending data...");
+  sendJsonXhrRequest(settings, setCallback);
+}
 </script>
 </body>
 </html>
