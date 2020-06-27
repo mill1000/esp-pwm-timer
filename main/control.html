@@ -4,7 +4,11 @@
 <meta charset="UTF-8">
 <title>LED Setup</title>
 <style>
-.tabulator-col-title {  text-align: center; }
+.tabulator-col-title {  text-align: center;}
+.container {display: flex; width:auto; justify-content: space-evenly; padding-left:5%; padding-right:5%}
+#systemTable {width:40%; margin-right:5%}
+#channelTable {width:60%}
+#scheduleTable {width: 100%;}
 </style>
 <!-- Tabulator CDN -->
 <link href="https://unpkg.com/tabulator-tables@4.7.0/dist/css/tabulator.min.css" rel="stylesheet">
@@ -16,9 +20,14 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.27.0/moment.min.js"></script>
 </head>
 <body>
-<div id="channelTable"></div><br/>
+<div class="container">
+<div id="systemTable"></div><div id="channelTable"></div>
+</div>
+<br/>
 <button id="addRow" onclick="scheduleTable.addRow()">Add Time</button><br/>
+<div class="container">
 <div id="scheduleTable"></div>
+</div>
 <script type="text/javascript">
 // Workaround issue #2858 https://github.com/olifolkerd/tabulator/issues/2858
 Tabulator.prototype.moduleBindings.edit.prototype.clearEdited = function (cell) {
@@ -35,16 +44,72 @@ Tabulator.prototype.moduleBindings.edit.prototype.clearEdited = function (cell) 
   }
 };
 
+// Class to represent a timer configuration
+class Timer {
+  constructor(index) {
+    this.name = "Timer " + index;
+    this.freq = 120;
+    this.enabled = false;
+  }
+
+  get valid() { return this.freq ? true : false; }
+}
+
+// "Namespace" to handle timer array
+var Timers = {
+  _timers: Array.from(Array(4).keys()).map(x => new Timer(x)),
+  
+  get all() {
+    return this._timers;
+  },
+
+  get enabled() {
+    // Add an empty timer for the select list
+    return [""].concat(this._timers.filter(t => t.enabled).map(t => t.name));
+  },
+}
+
+// Define the system config table
+var systemTable = new Tabulator("#systemTable", {
+  headerSort: false, // Don't allow sorting
+  reactiveData: true, // Update data source as table is editted
+  data: Timers.all,
+  layout: "fitColumns",
+  columns: [
+    { title: "Timer", field: "name", widthGrow:3, },
+    { title: "Frequency", field: "freq", widthGrow:2, editor: "number", 
+      editorParams: {
+        min: 0, 
+        max: 50000, 
+        step:1000, 
+        mask: "99999",
+      },
+      validator:"max:50000",
+      cellEdited: (c) => { if (!c.getData().valid) c.getRow().getCell("enabled").setValue(false) },
+      tooltip: (c) => !c.isValid() ? "Frequency value must be between 0 Hz and 50 kHz." : "",
+    },
+    { title: "Enabled", field: "enabled", formatter: "tickCross", hozAlign: "center",
+        cellClick: (e, c) => { if (c.getData().valid) c.setValue(!c.getValue()) },
+        tooltip: (c) => !c.getData().valid ? "Frequency must be assigned to enable timer." : "",
+    }
+  ],
+  dataEdited: () => channelTable.getColumn("timer").validate(),
+  validationMode: "highlight",
+  tooltipGenerationMode: "hover",
+});
+
+
 // Class to represent a channel configuration
 class Channel {
   constructor(index) {
     this.id = index;
     this.name = "Channel " + index;
+    this.timer = "";
     this.gpio = null;
     this.enabled = false;
   }
 
-  generateColumnDefinition() {
+  get columnDefinition() {
     // Generate a Tabulator column def
     return {
       title: "Channel " + this.id + "<br/>" + this.name,
@@ -52,40 +117,53 @@ class Channel {
       editor: "number", editorParams: { min: 0, max: 100, step: 10, mask: "999" },
       validator: "max:100",
       hozAlign: "center",
+      minWidth:"100em"
     };
   }
 
-  get valid() { return this.gpio ? true : false; }
+  get valid() { return this.gpio && this.timer; }
 }
 
-function updateScheduleColumns() {
-  // Create column definitions for each enabled channel
-  let newColumns = channels.filter(c => c.enabled).map(c => c.generateColumnDefinition());
-  scheduleTable.setColumns(columnTemplate.concat(newColumns));
-}
+// "Namespace" to handle channel array
+var Channels = {
+  _channels: Array.from(Array(8).keys()).map(x => new Channel(x)),
+  
+  get all() {
+    return this._channels;
+  },
 
-// Initalize an array of 8 channels
-var channels = Array.from(Array(8).keys()).map(x => new Channel(x));
+  get enabled() {
+    return this._channels.filter(c => c.enabled);
+  },
+
+  get columns() {
+    return this.enabled.map(c => c.columnDefinition);
+  },
+}
 
 // Define the channel table
 var channelTable = new Tabulator("#channelTable", {
   headerSort: false, // Don't allow sorting
   reactiveData: true, // Update data source as table is editted
-  data: channels,
-  layout: "fitDataTable",
+  data: Channels.all,
+  layout: "fitColumns",
   columns: [
-    { title: "ID", field: "id" },
-    { title: "Name", field: "name", minWidth: "200px", editor: "input" },
-    { title: "GPIO", field: "gpio", minWidth: "60px", editor: "number", editorParams: { min: 0, max: 31, mask: "99" }, validator: ["unique", "max:31"],
+    { title: "ID", field: "id"},
+    { title: "Name", field: "name", widthGrow:3, editor: "input", },
+    { title: "Timer", field: "timer", widthGrow:2, editor: "select", editorParams:() => ({ values:Timers.enabled}), validator:(c,v,p) => Timers.enabled.includes(v),
+      cellEdited: (c) => { if (!c.getData().valid) c.getRow().getCell("enabled").setValue(false) },
+      tooltip: (c) => !c.isValid() ? "Selected timer must be enabled." : "",
+    },
+    { title: "GPIO", field: "gpio", editor: "number", editorParams: { min: 0, max: 31, mask: "99" }, validator: ["unique", "max:31"], 
         cellEdited: (c) => { if (!c.getData().valid) c.getRow().getCell("enabled").setValue(false) },
         tooltip: (c) => !c.isValid() ? "GPIO value must be unique and between 0-31" : "",
     },
     { title: "Enabled", field: "enabled", formatter: "tickCross", hozAlign: "center",
         cellClick: (e, c) => { if (c.getData().valid) c.setValue(!c.getValue()) },
-        tooltip: (c) => !c.getData().valid ? "GPIO must be assigned to enable channel." : "",
+        tooltip: (c) => !c.getData().valid ? "GPIO and timer must be assigned to enable channel." : "",
     }
   ],
-  dataEdited: updateScheduleColumns, // Trigger schedule column update whenever this table is changed
+  dataEdited: () => scheduleTable.setColumns(columnTemplate.concat(Channels.columns)), // Trigger schedule column update whenever this table is changed
   validationMode: "highlight",
   tooltipGenerationMode: "hover",
 });
@@ -110,30 +188,27 @@ function timeEditor(cell, onRendered, success, cancel, editorParams) {
 
     // Open the editor
     picker.open();
-
-    // No idea what this does
-    editor.style.css = "100%";
   });
 
   return editor;
 }
 
 // Template for first 2 columns of schedule table
-  var columnTemplate = [
-    { title: "Remove", formatter: "buttonCross", hozAlign: "center", cellClick: (e, cell) => cell.getRow().delete() },
-    { title: "Time Of Day", field: "tod", editor: timeEditor, headerSort: true, sorter: "time", 
-      sorterParams: {
-        format: "HH:mm",
-        alignEmptyValues: "bottom",
-      }
-    },
-  ];
+var columnTemplate = [
+  { title: "Remove", formatter: "buttonCross", hozAlign: "center", cellClick: (e, cell) => cell.getRow().delete() },
+  { title: "Time Of Day", field: "tod", editor: timeEditor, headerSort: true, sorter: "time", 
+    sorterParams: {
+      format: "HH:mm",
+      alignEmptyValues: "bottom",
+    }
+  },
+];
 
 var scheduleTable = new Tabulator("#scheduleTable", {
   headerSort: false,
   reactiveData: true, // Update data source as table is editted
   data: schedule,
-  layout: "fitDataTable",
+  layout:"fitDataFill",
   columns: columnTemplate,
   validationMode: "highlight",
   movableRows: true,
