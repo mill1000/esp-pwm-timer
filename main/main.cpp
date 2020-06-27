@@ -10,6 +10,7 @@
 #include <string>
 
 #include "wifi.h"
+#include "http.h"
 #include "led.h"
 #include "schedule.h"
 
@@ -64,6 +65,9 @@ extern "C" void app_main()
 
   // Initalize WiFi and connect to configured network
   wifiInitStation();
+
+  // Start the HTTP task
+  xTaskCreate(httpTask, "HTTPTask", 4096, NULL, 1, NULL);
 
   // Create an event group to run the main loop from
   mainEventGroup = xEventGroupCreate();

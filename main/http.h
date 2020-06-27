@@ -5,7 +5,7 @@
 extern "C"{
 #endif
 
-void httpTask(void);
+void httpTask(void* pvParameters);
 
 #ifdef __cplusplus
 }
