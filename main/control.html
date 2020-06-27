@@ -210,7 +210,8 @@ function timeEditor(cell, onRendered, success, cancel, editorParams) {
 // Template for first 2 columns of schedule table
 var columnTemplate = [
   { title: "Remove", formatter: "buttonCross", hozAlign: "center", cellClick: (e, cell) => cell.getRow().delete() },
-  { title: "Time Of Day", field: "tod", editor: timeEditor, headerSort: true, sorter: "time", 
+  { title: "Time Of Day", field: "tod", editor: timeEditor, headerSort: true, sorter: "time", validator: "unique",
+    cellEdited: (c) => c.getColumn().validate(),
     sorterParams: {
       format: "HH:mm",
       alignEmptyValues: "bottom",
