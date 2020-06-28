@@ -6,6 +6,7 @@
 
 #include "http.h"
 #include "mongoose.h"
+#include "json.h"
 
 #define TAG "HTTP"
 
@@ -69,14 +70,12 @@ static void httpEventHandler(struct mg_connection* nc, int ev, void* ev_data)
       else if (strcmp(action, "set") == 0) // Set JSON values
       {
         // Move JSON data into null terminated buffer
-        std::vector<char> jsonBuffer(hm->body.p, hm->body.p + hm->body.len);
-        jsonBuffer.push_back('\0');
+        std::string buffer(hm->body.p, hm->body.p + hm->body.len);
 
-        ESP_LOGD(TAG, "Set = %s", &jsonBuffer[0]);
+        ESP_LOGI(TAG, "Set = %s", buffer.c_str());
 
         // Parse settings JSON and reset buffer
-        bool success = true;//opts->setAction(&jsonBuffer[0]);
-        jsonBuffer.clear();
+        bool success = JSON::parse_settings(buffer);
 
         const char* errorString = success ? "Update succesful." : "JSON parse failed.";
         uint16_t returnCode = success ? 200 : 400;
