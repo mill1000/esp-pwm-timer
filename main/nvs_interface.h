@@ -3,10 +3,10 @@
 
 #include "schedule.h"
 
-#define NVS_NAMESPACE "pwm_nvs"
 
 namespace NVS
 {
+  constexpr const char* PARAMETER_NAMESPACE = "pwm_config";
   void init(void);
 
   void save_timer_config(const timer_config_t& config);

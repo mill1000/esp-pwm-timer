@@ -11,19 +11,19 @@
 /**
   @brief  Class to help abstract some NVS actions
 */
-class nvs_helper
+class NvsHelper
 {
   public:
     // Typedef the callback format for easier use
-    typedef void (*nvs_callback_t)(const std::string&, esp_err_t);
+    typedef void (*nvs_callback_t)(const std::string&, const std::string&, esp_err_t);
 
-    // Result of last operation
-    esp_err_t result = ESP_OK;
+    NvsHelper(const std::string& _name) : name(_name) {};
 
-    void initalize(nvs_handle handle = 0, nvs_callback_t callback = NULL)
-    {
-      this->handle = handle;
+    esp_err_t open(nvs_callback_t callback = NULL)
+    {      
       this->callback = callback;
+
+      return nvs_open(this->name.c_str(), NVS_READWRITE, &this->handle);
     }
 
     esp_err_t commit(void)
@@ -32,7 +32,7 @@ class nvs_helper
       
       result = nvs_commit(handle);
       if (result != ESP_OK && callback != NULL)
-        callback("COMMIT", result);
+        callback(this->name, "COMMIT", result);
 
       return result;
     }
@@ -43,7 +43,7 @@ class nvs_helper
 
       result = nvs_erase_all(handle);
       if (result != ESP_OK && callback != NULL)
-        callback("ERASE", result);
+        callback(this->name, "ERASE", result);
 
       return result;
     }
@@ -54,7 +54,7 @@ class nvs_helper
 
       result = _nvs_set(key.c_str(), value);
       if (result != ESP_OK && callback != NULL)
-        callback(key, result);
+        callback(this->name, key, result);
 
       return result;
     }
@@ -65,7 +65,7 @@ class nvs_helper
 
       result = _nvs_get(key.c_str(), value);
       if (result != ESP_OK && callback != NULL)
-        callback(key, result);
+        callback(this->name, key, result);
 
       return result;
     }
@@ -73,6 +73,8 @@ class nvs_helper
   private:
     nvs_handle_t handle;
     nvs_callback_t callback = NULL;
+    esp_err_t result = ESP_OK; // Result of last operation
+    const std::string name; // Namespace
 
     /**
       @brief  Overloaded wrapper for nvs_set to expand to nvs_set_T
@@ -212,7 +214,7 @@ class nvs_helper
 template<typename T> class parameter_t
 {
   public:
-    parameter_t(nvs_helper& _helper, const char* key) : helper(_helper)
+    parameter_t(NvsHelper& _helper, const char* key) : helper(_helper)
     {
       this->key = key;
     }
@@ -238,7 +240,7 @@ template<typename T> class parameter_t
     }
 
   protected:
-    nvs_helper& helper;
+    NvsHelper& helper;
     const char* key;
     
     esp_err_t set(T value)
@@ -260,7 +262,7 @@ template<typename T> class parameter_t
 template<typename T> class cached_parameter_t : public parameter_t<T>
 {
   public:
-    cached_parameter_t(nvs_helper& _helper, const char* key, T defaultValue = T()) : parameter_t<T>(_helper, key)
+    cached_parameter_t(NvsHelper& _helper, const char* key, T defaultValue = T()) : parameter_t<T>(_helper, key)
     {
       this->cache = defaultValue;
     }

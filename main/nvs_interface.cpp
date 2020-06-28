@@ -6,21 +6,20 @@
 
 #define TAG "NVS"
 
-static struct : public nvs_helper
-{
-   
+static NvsHelper parameters(NVS::PARAMETER_NAMESPACE);
 } parameters;
 
 /**
   @brief  Callback function for the NVS helper to report errors 
   
+  @param  name Namespace that caused the error
   @param  key The paramter key that caused the error
   @param  result The esp_error_t of the error
   @retval none
 */
-static void helper_callback(const std::string& key, esp_err_t result)
+static void helper_callback(const std::string& name, const std::string& key, esp_err_t result)
 {
-  ESP_LOGW(TAG, "NVS Error. Key: %s Error: %s", key.c_str(), esp_err_to_name(result));
+  ESP_LOGW(TAG, "NVS Error. Namespace: %s Key: %s Error: %s", name.c_str(), key.c_str(), esp_err_to_name(result));
 }
 
 /**
@@ -33,10 +32,10 @@ void NVS::init()
 {
   ESP_LOGI(TAG, "Initializing NVS interface.");
 
-  nvs_handle_t handle = 0;
-  if (nvs_open(NVS_NAMESPACE, NVS_READWRITE, &handle) != ESP_OK)
+  // Open a namespace to hold our parameters
+  if (parameters.open(&helper_callback) != ESP_OK)
   {
-    ESP_LOGE(TAG, "Error opening NVS namespace '%s'.", NVS_NAMESPACE);
+    ESP_LOGE(TAG, "Error opening NVS namespace '%s'.", PARAMETER_NAMESPACE);
     return;
   }
 
