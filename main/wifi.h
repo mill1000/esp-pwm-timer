@@ -1,17 +1,12 @@
 #ifndef __WIFI_H__
 #define __WIFI_H__
 
-#ifdef __cplusplus
-extern "C"{
-#endif
+namespace WiFi
+{
+  constexpr int RETRY_COUNT = 3;
 
-#define WIFI_RETRY_COUNT (3)
-
-
-void wifiInitStation(void);
-
-#ifdef __cplusplus
+  void init_station(void);
 }
-#endif
+
 
 #endif

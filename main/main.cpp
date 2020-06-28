@@ -40,7 +40,7 @@ extern "C" void app_main()
   NVS::init();
 
   // Initalize WiFi and connect to configured network
-  wifiInitStation();
+  WiFi::init_station();
 
   // Start the HTTP task
   xTaskCreate(httpTask, "HTTPTask", 8192, NULL, 1, NULL);

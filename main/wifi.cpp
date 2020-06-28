@@ -8,7 +8,7 @@
 
 #define TAG "WiFi"
 
-static uint32_t retry_count = WIFI_RETRY_COUNT;
+static uint32_t retry_count = WiFi::RETRY_COUNT;
 
 /**
   @brief  Event handler for WIFI_EVENT base
@@ -38,7 +38,7 @@ static void wifiEventHandler(void* arg, esp_event_base_t event_base, int32_t eve
     {
       if (retry_count--) 
       {
-        ESP_LOGI(TAG, "Retrying connection... (%d/%d)", retry_count, WIFI_RETRY_COUNT);
+        ESP_LOGI(TAG, "Retrying connection... (%d/%d)", retry_count, WiFi::RETRY_COUNT);
         esp_wifi_connect();
       }
       else
@@ -75,7 +75,7 @@ static void ipEventHandler(void* arg, esp_event_base_t event_base, int32_t event
       ESP_LOGI(TAG, "Assigned IP: %s", ip4addr_ntoa(&event->ip_info.ip));
       
       // Reset retires
-      retry_count = WIFI_RETRY_COUNT;
+      retry_count = WiFi::RETRY_COUNT;
 
       break;
     }
@@ -92,7 +92,7 @@ static void ipEventHandler(void* arg, esp_event_base_t event_base, int32_t event
   @param  none
   @retval none
 */
-void wifiInitStation()
+void WiFi::init_station()
 {
   tcpip_adapter_init();
 
