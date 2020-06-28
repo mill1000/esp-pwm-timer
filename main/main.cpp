@@ -46,16 +46,13 @@ extern "C" void app_main()
     ESP_LOGE(TAG, "Failed to create main event group.");
 
   // Construct a timer to handle the scheduled events
-  TimerHandle_t scheduleTimer = xTimerCreate("ScheduleTimer", pdMS_TO_TICKS(1000), false, (void*) Schedule::INVALID_TOD, 
+  TimerHandle_t scheduleTimer = xTimerCreate("ScheduleTimer", 1, false, (void*) Schedule::INVALID_TOD, 
     [](TimerHandle_t t) {
       signal_event(MAIN_EVENT_LED_TIMER_EXPIRED);
     });
 
   if (scheduleTimer == NULL)
     ESP_LOGE(TAG, "Failed to create schedule timer.");
-  
-  if (xTimerStart(scheduleTimer, pdMS_TO_TICKS(1000)) != pdPASS)
-    ESP_LOGE(TAG, "Failed to start schedule timer.");
 
   // Configure NTP for MST/MDT
   SNTP::init("MST7MDT,M3.2.0,M11.1.0", [](){
@@ -70,31 +67,30 @@ extern "C" void app_main()
   // Wait for initial time sync
   xEventGroupWaitBits(mainEventGroup, MAIN_EVENT_SYSTEM_TIME_UPDATED, pdTRUE, pdFALSE, portMAX_DELAY);
 
+  // Trigger a load of the schedule on start
+  xEventGroupSetBits(mainEventGroup, MAIN_EVENT_SCHEDULE_UPDATE);
+
   while (true)
   {
     EventBits_t events = xEventGroupWaitBits(mainEventGroup, MAIN_EVENT_ALL, pdTRUE, pdFALSE, portMAX_DELAY);
 
     if (events & MAIN_EVENT_CONFIG_UPDATE)
-    {
       LEDC::reconfigure();
-    }
 
     if (events & MAIN_EVENT_SCHEDULE_UPDATE)
     {
-      schedule.reset();
+      ESP_LOGI(TAG, "Loading schedule...");
 
       std::map<std::string, std::string> scheduleJson = NVS::get_schedule_json();
 
-      ESP_LOGI(TAG, "New schedule.");
+      schedule.reset();
+
       for (auto& kv : scheduleJson)
       {
         Schedule::time_of_day_t tod = Schedule::get_time_of_day(kv.first);
         Schedule::entry_t entry = JSON::parse_schedule_entry(kv.second);
 
         schedule.set(tod, entry);
-        ESP_LOGI(TAG, "TOD '%s' (%ld).", kv.first.c_str(), tod);
-        for (auto& ci : entry)
-          ESP_LOGI(TAG, "\tChannel %d Intensity: %g", ci.first, ci.second);
       }
 
       Schedule::time_of_day_t prev = schedule.prev(Schedule::get_time_of_day(time(NULL)));
