@@ -96,6 +96,16 @@ class Schedule
       return now % seconds_per_day;
     }
 
+    static time_of_day_t get_time_of_day(const std::string& tod)
+    {
+      struct tm timeinfo;
+      strptime(tod.c_str(), "%H:%M", &timeinfo);
+
+      time_t time = timeinfo.tm_hour * 3600 + timeinfo.tm_min * 60;
+
+      return get_time_of_day(time);
+    }
+
     static time_of_day_t delta(time_of_day_t next, time_of_day_t prev)
     {
       if (next == INVALID_TOD || prev == INVALID_TOD)
