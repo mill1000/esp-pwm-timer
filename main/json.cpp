@@ -3,6 +3,7 @@
 #include "json.h"
 #include "schedule.h"
 #include "nvs_interface.h"
+#include "main.h"
 #include "nlohmann/json.hpp"
 
 #define TAG "JSON"
@@ -35,6 +36,8 @@ bool JSON::parse_settings(const std::string& jString)
 
       NVS::save_timer_config(config);
     }
+
+    signal_event(MAIN_EVENT_TIMER_CONFIG_UPDATE);
   }
 
   if (root.contains("channels"))
@@ -59,6 +62,8 @@ bool JSON::parse_settings(const std::string& jString)
 
       NVS::save_channel_config(config);
     }
+    
+    signal_event(MAIN_EVENT_CHANNEL_CONFIG_UPDATE);
   }
 
   if (root.contains("schedule"))
