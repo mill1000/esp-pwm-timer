@@ -50,8 +50,8 @@ Tabulator.prototype.moduleBindings.edit.prototype.clearEdited = function (cell) 
 };
 
 function validId(id) {
-  // God damn fucking JS treats 0 and NULL as the same all the fucking time.
-  return id != undefined && id != null;
+  // We want 0 as a valid ID but want to exlude null, undef and empty
+  return id != undefined && id != null && id !== "";
 }
 
 // Class to represent a timer configuration
@@ -60,7 +60,6 @@ class Timer {
     this.id = index;
     this.name = "Timer " + index;
     this.freq = 120;
-    this.enabled = false;
   }
 
   get valid() { return this.freq ? true : false; }
@@ -74,16 +73,12 @@ var Timers = {
     return this._timers;
   },
 
-  get enabled() {
-    return this._timers.filter(t => t.enabled);
-  },
-
   get select_list() {
-    return [undefined].concat(Timers.enabled.map(t => t.id));
+    return Timers.all.map(t => t.id);
   },
 
   get_name: function(id) {
-    return (id != null && id != undefined) ? this._timers[id].name : "";
+    return this._timers[id].name;
   },
 
   get dictionary() {
@@ -110,15 +105,9 @@ var timerTable = new Tabulator("#timerTable", {
         mask: "99999",
       },
       validator:"max:50000",
-      cellEdited: (c) => { if (!c.getData().valid) c.getRow().getCell("enabled").setValue(false) },
       tooltip: (c) => !c.isValid() ? "Frequency value must be between 0 Hz and 50 kHz." : "",
     },
-    { title: "Enabled", field: "enabled", formatter: "tickCross", hozAlign: "center",
-        cellClick: (e, c) => { if (c.getData().valid) c.setValue(!c.getValue()) },
-        tooltip: (c) => !c.getData().valid ? "Frequency must be assigned to enable timer." : "",
-    }
   ],
-  dataEdited: () => channelTable.getColumn("timer").validate(),
   validationMode: "highlight",
   tooltipGenerationMode: "hover",
 });
@@ -129,7 +118,7 @@ class Channel {
   constructor(index) {
     this.id = index;
     this.name = "Channel " + index;
-    this.timer = null;
+    this.timer = 0;
     this.gpio = null;
     this.enabled = false;
   }
@@ -187,9 +176,6 @@ var channelTable = new Tabulator("#channelTable", {
         listItemFormatter:(v,t) => Timers.get_name(v),
       }, 
       formatter: (c, p, o) => Timers.get_name(c.getValue()),
-      validator: (c,v,p) => v != null ? Timers.select_list.includes(v) : true,
-      cellEdited: (c) => { if (!c.getData().valid) c.getRow().getCell("enabled").setValue(false) },
-      tooltip: (c) => !c.isValid() ? "Selected timer must be enabled." : "",
     },
     { title: "GPIO", field: "gpio", editor: "number", editorParams: { min: 0, max: 31, mask: "99" }, validator: ["unique", "max:31"], 
         cellEdited: (c) => { if (!c.getData().valid) c.getRow().getCell("enabled").setValue(false) },
@@ -197,7 +183,7 @@ var channelTable = new Tabulator("#channelTable", {
     },
     { title: "Enabled", field: "enabled", formatter: "tickCross", hozAlign: "center",
         cellClick: (e, c) => { if (c.getData().valid) c.setValue(!c.getValue()) },
-        tooltip: (c) => !c.getData().valid ? "GPIO and timer must be assigned to enable channel." : "",
+        tooltip: (c) => !c.getData().valid ? "GPIO must be assigned to enable channel." : "",
     }
   ],
   dataEdited: () => scheduleTable.setColumns(columnTemplate.concat(Channels.columns)), // Trigger schedule column update whenever this table is changed
