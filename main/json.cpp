@@ -72,10 +72,14 @@ bool JSON::parse_settings(const std::string& jString)
     
     ESP_LOGI(TAG, "Schedule: %s", schedule.dump().c_str());
 
-    for (auto& entry : schedule.items())
-    {
+    NVS::erase_schedule();
 
-    }
+    for (auto& kv : schedule.items())
+      NVS::save_schedule_entry_json(kv.key(), kv.value().dump());
+
+    NVS::commit_schedule();
+
+    signal_event(MAIN_EVENT_SCHEDULE_UPDATE);
   }
 
   return true;
