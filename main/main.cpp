@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "main.h"
 #include "wifi.h"
 #include "http.h"
 #include "sntp_interface.h"
@@ -15,13 +16,6 @@
 #include "nvs_interface.h"
 
 #define TAG "Main"
-
-typedef enum
-{
-  MAIN_EVENT_SYSTEM_TIME_UPDATED = 1 << 0,
-  MAIN_EVENT_LED_TIMER_EXPIRED   = 1 << 1,
-  MAIN_EVENT_ALL                 = 0x00FFFFFF, // 24 bits max
-} MAIN_EVENT;
 
 static EventGroupHandle_t mainEventGroup;
 
@@ -53,7 +47,7 @@ extern "C" void app_main()
   // Construct a timer to handle the scheduled events
   TimerHandle_t scheduleTimer = xTimerCreate("ScheduleTimer", pdMS_TO_TICKS(1000), false, (void*) Schedule::INVALID_TOD, 
     [](TimerHandle_t t) {
-      xEventGroupSetBits(mainEventGroup, MAIN_EVENT_LED_TIMER_EXPIRED);
+      signal_event(MAIN_EVENT_LED_TIMER_EXPIRED);
     });
 
   if (scheduleTimer == NULL)
@@ -64,8 +58,7 @@ extern "C" void app_main()
 
   // Configure NTP for MST/MDT
   SNTP::init("MST7MDT,M3.2.0,M11.1.0", [](){
-    if (mainEventGroup != NULL)
-      xEventGroupSetBits(mainEventGroup, MAIN_EVENT_SYSTEM_TIME_UPDATED);
+    signal_event(MAIN_EVENT_SYSTEM_TIME_UPDATED);
   });
 
   Schedule schedule;
@@ -144,4 +137,16 @@ extern "C" void app_main()
       }
     }
   }
+}
+
+/**
+  @brief  Signal an event to the main loop
+
+  @param  event MAIN_EVENT to signal
+  @retval none
+*/
+void signal_event(MAIN_EVENT event)
+{
+  if (mainEventGroup != NULL)
+    xEventGroupSetBits(mainEventGroup, event);
 }
