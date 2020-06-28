@@ -107,7 +107,7 @@ void LEDC::configure_channel(const channel_config_t& config)
 
   if (config.timer >= LEDC_TIMER_MAX)
   {
-    ESP_LOGW(TAG, "Channel %d: Invalid timer '%d'", config.id, config.gpio);
+    ESP_LOGW(TAG, "Channel %d: Invalid timer '%d'", config.id, config.timer);
     return;
   }
 
