@@ -13,6 +13,7 @@
 #include "http.h"
 #include "led.h"
 #include "schedule.h"
+#include "nvs_interface.h"
 
 #define TAG "Main"
 
@@ -63,11 +64,14 @@ extern "C" void app_main()
   }
   ESP_ERROR_CHECK(result);
 
+  // Initalizer our own NVS interface
+  NVS::init();
+
   // Initalize WiFi and connect to configured network
   wifiInitStation();
 
   // Start the HTTP task
-  xTaskCreate(httpTask, "HTTPTask", 4096, NULL, 1, NULL);
+  xTaskCreate(httpTask, "HTTPTask", 8192, NULL, 1, NULL);
 
   // Create an event group to run the main loop from
   mainEventGroup = xEventGroupCreate();
@@ -165,5 +169,4 @@ extern "C" void app_main()
       }
     }
   }
-
 }
