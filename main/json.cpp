@@ -8,6 +8,12 @@
 
 #define TAG "JSON"
 
+/**
+  @brief  Parse the entire JSON string received from the web interface
+  
+  @param  jString JSON string received from web interface
+  @retval bool - JSON was valid and processed
+*/
 bool JSON::parse_settings(const std::string& jString)
 {
   nlohmann::json root = nlohmann::json::parse(jString, nullptr, false);
@@ -17,6 +23,7 @@ bool JSON::parse_settings(const std::string& jString)
     return false;
   }
 
+  // Parse timers object
   if (root.contains("timers"))
   {
     nlohmann::json timers = root.at("timers");
@@ -38,6 +45,7 @@ bool JSON::parse_settings(const std::string& jString)
     }
   }
 
+  // Parse channels object
   if (root.contains("channels"))
   {
     nlohmann::json channels = root.at("channels");
@@ -66,6 +74,7 @@ bool JSON::parse_settings(const std::string& jString)
   if (root.contains("timers") || root.contains("channels"))
     signal_event(MAIN_EVENT_CONFIG_UPDATE);
 
+  // Parse schedule object
   if (root.contains("schedule"))
   {
     nlohmann::json schedule = root.at("schedule");
@@ -83,4 +92,36 @@ bool JSON::parse_settings(const std::string& jString)
   }
 
   return true;
+}
+
+/**
+  @brief  Parse JSON representing a single entry of the schedule into a C++ type
+  
+  @param  jEntry JSON string represenation of entry
+  @retval Schedule::entry_t
+*/
+Schedule::entry_t JSON::parse_schedule_entry(const std::string& jEntry)
+{
+  nlohmann::json root = nlohmann::json::parse(jEntry, nullptr, false);
+  if (root.is_discarded())
+  {
+    ESP_LOGE(TAG, "Invalid schedule entry JSON '%s'", jEntry.c_str());
+
+    Schedule::entry_t empty;
+    return empty;
+  }
+
+  Schedule::entry_t entry;
+
+  for (auto& kv : root.items())
+  {
+    // Skip the duplicate TOD entry within the object
+    if (kv.key() == "tod")
+      continue;
+
+    ledc_channel_t channel = (ledc_channel_t) std::stoi(kv.key());
+    float intensity = kv.value().get<float>();
+  }
+
+  return entry;
 }

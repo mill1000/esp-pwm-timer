@@ -2,11 +2,15 @@
 #define __JSON_H__
 
 #include <string>
+
 #include "nlohmann/json.hpp"
+#include "schedule.h"
 
 namespace JSON
 {
   bool parse_settings(const std::string& jString);
+
+  Schedule::entry_t parse_schedule_entry(const std::string& jEntry);
 
   template <typename T> T get_or_default(const nlohmann::json& json, const std::string& key, const T& default_value)
   {
