@@ -45,6 +45,11 @@ class Schedule
       schedule[time][channel] = intensity;
     }
 
+    void set(time_of_day_t time, const entry_t& entry)
+    {
+      schedule[time] = entry;
+    }
+
     time_of_day_t next(time_of_day_t now) const
     {
       if (schedule.empty())
