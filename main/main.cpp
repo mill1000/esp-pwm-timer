@@ -14,6 +14,7 @@
 #include "schedule.h"
 #include "ledc_interface.h"
 #include "nvs_interface.h"
+#include "json.h"
 
 #define TAG "Main"
 
@@ -78,6 +79,31 @@ extern "C" void app_main()
       LEDC::reconfigure();
     }
 
+    if (events & MAIN_EVENT_SCHEDULE_UPDATE)
+    {
+      schedule.reset();
+
+      std::map<std::string, std::string> scheduleJson = NVS::get_schedule_json();
+
+      ESP_LOGI(TAG, "New schedule.");
+      for (auto& kv : scheduleJson)
+      {
+        Schedule::time_of_day_t tod = Schedule::get_time_of_day(kv.first);
+        Schedule::entry_t entry = JSON::parse_schedule_entry(kv.second);
+
+        schedule.set(tod, entry);
+        ESP_LOGI(TAG, "TOD '%s' (%ld).", kv.first.c_str(), tod);
+        for (auto& ci : entry)
+          ESP_LOGI(TAG, "\tChannel %d Intensity: %g", ci.first, ci.second);
+      }
+
+      Schedule::time_of_day_t prev = schedule.prev(Schedule::get_time_of_day(time(NULL)));
+
+      // Reset event ID to previous and trigger timer update
+      vTimerSetTimerID(scheduleTimer, (void*) prev);
+      xEventGroupSetBits(mainEventGroup, MAIN_EVENT_LED_TIMER_EXPIRED);
+    }
+
     if (events & MAIN_EVENT_SYSTEM_TIME_UPDATED)
     {
       // Calculate time of day, and delta to next scheduled event
@@ -137,8 +163,8 @@ extern "C" void app_main()
       // Execute state changes for TOD
       for (auto pair : schedule[expectedTOD])
       {
-        ESP_LOGI(TAG, "Setting channel %d to %f", pair.first, pair.second);
-        LEDC::set_intensity((ledc_channel_t) pair.first, pair.second);
+        ESP_LOGI(TAG, "Setting channel %d to %g", pair.first, pair.second);
+        LEDC::set_intensity((ledc_channel_t) pair.first, pair.second, 0);
       }
     }
   }
