@@ -56,13 +56,12 @@ static void httpEventHandler(struct mg_connection* nc, int ev, void* ev_data)
       }
       else if (strcmp(action, "get") == 0) // Get JSON values
       {
-        std::string settings;
-        int32_t length = 0;//opts->getAction(settings);
+        std::string settings = JSON::get_settings();
 
         ESP_LOGD(TAG, "Get = %s", settings.c_str());
 
-        mg_send_head(nc, 200, length, "Content-Type: application/json");
-        mg_send(nc, settings.c_str(), length);
+        mg_send_head(nc, 200, settings.length(), "Content-Type: application/json");
+        mg_send(nc, settings.c_str(), settings.length());
         nc->flags |= MG_F_SEND_AND_CLOSE;   
     
         break;

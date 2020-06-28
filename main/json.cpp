@@ -9,7 +9,8 @@
 #define TAG "JSON"
 
 /**
-  @brief  Parse the entire JSON string received from the web interface
+  @brief  Parse the JSON settings received from the web interface 
+          and store to the NVS
   
   @param  jString JSON string received from web interface
   @retval bool - JSON was valid and processed
@@ -124,4 +125,57 @@ Schedule::entry_t JSON::parse_schedule_entry(const std::string& jEntry)
   }
 
   return entry;
+}
+
+/**
+  @brief  Build a JSON string of the settings saved in NVS
+  
+  @param  none
+  @retval std::string
+*/
+std::string JSON::get_settings()
+{ 
+  nlohmann::json timers = nlohmann::json::object();
+  for (uint8_t i = 0; i < LEDC_TIMER_MAX; i++)
+  {
+    timer_config_t config = NVS::get_timer_config(i);
+    
+    // This fucking JSON lib
+    timers[std::to_string(i)] = {
+        {"id", config.id},
+        {"freq", config.frequency_Hz},
+    };
+  }
+
+  nlohmann::json channels = nlohmann::json::object();
+  for (uint8_t i = 0; i < LEDC_CHANNEL_MAX; i++)
+  {
+    channel_config_t config = NVS::get_channel_config(i);
+    
+    nlohmann::json& channel = channels[std::to_string(i)];
+    channel = {
+        {"id", config.id},
+        {"enabled", config.enabled},
+        {"timer", config.timer}
+    };
+
+    // Special handling for GPIO
+    if (config.gpio != GPIO_NUM_NC)
+      channel["gpio"] = config.gpio;
+    else
+      channel["gpio"] = nullptr;
+  }
+
+  nlohmann::json schedule = nlohmann::json::object();
+
+  std::map<std::string, std::string> scheduleJson = NVS::get_schedule_json();
+  for (auto& kv : scheduleJson)
+    schedule[kv.first] = nlohmann::json::parse(kv.second);
+
+  nlohmann::json root;
+  root["timers"] = timers;
+  root["channels"] = channels;
+  root["schedule"] = schedule;
+
+  return root.dump();
 }
