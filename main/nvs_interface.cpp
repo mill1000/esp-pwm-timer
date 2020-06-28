@@ -7,7 +7,7 @@
 #define TAG "NVS"
 
 static NvsHelper parameters(NVS::PARAMETER_NAMESPACE);
-} parameters;
+static NvsHelper schedule(NVS::SCHEDULE_NAMESPACE);
 
 /**
   @brief  Callback function for the NVS helper to report errors 
@@ -19,7 +19,7 @@ static NvsHelper parameters(NVS::PARAMETER_NAMESPACE);
 */
 static void helper_callback(const std::string& name, const std::string& key, esp_err_t result)
 {
-  ESP_LOGW(TAG, "NVS Error. Namespace: %s Key: %s Error: %s", name.c_str(), key.c_str(), esp_err_to_name(result));
+  ESP_LOGW(TAG, "NVS Error. Namespace '%s' Key '%s' Error: %s", name.c_str(), key.c_str(), esp_err_to_name(result));
 }
 
 /**
@@ -39,8 +39,12 @@ void NVS::init()
     return;
   }
 
-  // Construct the NVS helper now that the handle is valid
-  parameters.initalize(handle, &helper_callback);
+  // Open a second namespace just to hold the schedule
+  if (schedule.open(&helper_callback) != ESP_OK)
+  {
+    ESP_LOGE(TAG, "Error opening NVS namespace '%s'.", SCHEDULE_NAMESPACE);
+    return;
+  }
 }
 
 /**
@@ -109,4 +113,39 @@ channel_config_t NVS::get_channel_config(uint32_t id)
   parameters.nvs_get<channel_config_t>(std::string(key), config);
 
   return config;
+}
+
+
+/**
+  @brief  Erase all data in the schedule NVS. Does not commit!
+  
+  @param  none
+  @retval none
+*/
+void NVS::erase_schedule()
+{
+  schedule.erase_all();
+}
+
+/**
+  @brief  Commit changes in the schedule NVS.
+  
+  @param  none
+  @retval none
+*/
+void NVS::commit_schedule()
+{
+  schedule.commit();
+}
+
+/**
+  @brief  Save a schedule entry JSON representation
+  
+  @param  tod Time Of Day key for the schedule entry
+  @param  json JSON object for the TOD 
+  @retval none
+*/
+void NVS::save_schedule_entry_json(const std::string& tod, const std::string& json)
+{
+  parameters.nvs_set<std::string>(tod, json);
 }
