@@ -28,14 +28,14 @@ class Schedule
 {
   public:
     // Typedef some names for LED usage
-    typedef int   led_channel_t;
+    typedef ledc_channel_t led_channel_t;
     typedef float led_intensity_t;
 
     // Create a type to help distinguish that we work with TOD
     typedef time_t time_of_day_t;
 
     // Short-hand for channel->intensity map
-    typedef std::map<led_channel_t, led_intensity_t> state_change_map_t;
+    typedef std::map<led_channel_t, led_intensity_t> entry_t;
 
     static constexpr time_of_day_t INVALID_TOD = (time_of_day_t) -1;
     static constexpr int MAX_SCHEDULE_ERROR = 5; // 5 seconds
@@ -63,9 +63,9 @@ class Schedule
       schedule.clear();
     }
 
-    const state_change_map_t& operator[](time_of_day_t time) const
+    const entry_t& operator[](time_of_day_t time) const
     {
-      static state_change_map_t empty;
+      static entry_t empty;
       
       if (schedule.count(time))
         return schedule.at(time);
@@ -89,7 +89,7 @@ class Schedule
   private:
     static constexpr int seconds_per_day = 86400;
 
-    std::map<time_of_day_t, state_change_map_t> schedule;
+    std::map<time_of_day_t, entry_t> schedule;
 };
 
 #endif
