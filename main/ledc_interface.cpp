@@ -7,13 +7,39 @@
 
 #include <cstring>
 
-#include "led.h"
-#include "schedule.h"
+#include "ledc_interface.h"
 #include "nvs_interface.h"
+#include "schedule.h"
 
 #define TAG "LED"
 
-void ledConfigureTimer(const timer_config_t& config)
+/**
+  @brief  Initalize the LEDC peripheral and enable fade function
+  
+  @param  none
+  @retval none
+*/
+void LEDC::init()
+{
+  // Configure timer 0
+  timer_config_t timer = NVS::get_timer_config(0);
+  configure_timer(timer);
+
+  // Configure channel0
+  channel_config_t channel = NVS::get_channel_config(0);
+  configure_channel(channel);
+
+  // Enable fade function
+  ledc_fade_func_install(0);
+}
+
+/**
+  @brief  Configure a LEDC timer with the provided configuration
+  
+  @param  config timer_config_t
+  @retval none
+*/
+void LEDC::configure_timer(const timer_config_t& config)
 {
   if (config.id >= LEDC_TIMER_MAX)
   {
@@ -35,7 +61,13 @@ void ledConfigureTimer(const timer_config_t& config)
   ledc_timer_config(&timer_config);
 }
 
-void ledConfigureChannel(const channel_config_t& config)
+/**
+  @brief  Configure a LEDC channel with the provided configuration
+  
+  @param  config channel_config_t
+  @retval none
+*/
+void LEDC::configure_channel(const channel_config_t& config)
 {
   if (config.id >= LEDC_CHANNEL_MAX)
   {
@@ -77,25 +109,22 @@ void ledConfigureChannel(const channel_config_t& config)
   ledc_channel_config(&channel_config);
 }
 
-void ledInit(uint32_t frequency_Hz)
-{
-  // Configure timer 0
-  timer_config_t timer = NVS::get_timer_config(0);
-  ledConfigureTimer(timer);
-
-  // Configure channel0
-  channel_config_t channel = NVS::get_channel_config(0);
-  ledConfigureChannel(channel);
-
-  // Enable fade function
-  ledc_fade_func_install(0);
-}
-
-void ledSetIntensity(ledc_channel_t channel, double intensity, uint32_t fade_ms)
+/**
+  @brief  Set the relative intensity of the target channel with a fade
+  
+  @param  channel Target channel
+  @param  intensity Desired intensity from 0 - 100 %
+  @param  fade_ms Fade time in milliseconds. Defaults to 5 seconds.
+  @retval none
+*/
+void LEDC::set_intensity(ledc_channel_t channel, double intensity, uint32_t fade_ms)
 {
   // Clamp from 0 - 1
   intensity = std::max(intensity, 0.0);
-  intensity = std::min(intensity, 1.0);
+  intensity = std::min(intensity, 100.0);
+
+  // Scale to 0 - 1
+  intensity /= 100.0;
 
   // Calculate integer intensity based on resolution
   uint32_t range = intensity * ((1 << LED_RESOLUTION) - 1);

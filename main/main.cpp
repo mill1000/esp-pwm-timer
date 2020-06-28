@@ -11,8 +11,8 @@
 
 #include "wifi.h"
 #include "http.h"
-#include "led.h"
 #include "schedule.h"
+#include "ledc_interface.h"
 #include "nvs_interface.h"
 
 #define TAG "Main"
@@ -96,7 +96,7 @@ extern "C" void app_main()
   Schedule schedule;
 
   // Init LED peripherals
-  ledInit();
+  LEDC::init();
 
   // Wait for initial time sync
   xEventGroupWaitBits(mainEventGroup, MAIN_EVENT_SYSTEM_TIME_UPDATED, pdTRUE, pdFALSE, portMAX_DELAY);
@@ -165,7 +165,7 @@ extern "C" void app_main()
       for (auto pair : schedule[expectedTOD])
       {
         ESP_LOGI(TAG, "Setting channel %d to %f", pair.first, pair.second);
-        ledSetIntensity((ledc_channel_t) pair.first, pair.second);
+        LEDC::set_intensity((ledc_channel_t) pair.first, pair.second);
       }
     }
   }
