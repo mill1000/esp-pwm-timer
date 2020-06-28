@@ -3,9 +3,9 @@
 
 namespace SNTP
 {
-  typedef void (*sync_callback)(void);
+  typedef void (*sync_callback_t)(void);
 
-  void init(const std::string& timezone, sync_callback callback);
+  void init(const std::string& timezone, sync_callback_t callback);
 }
 
 #endif

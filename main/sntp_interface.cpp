@@ -15,12 +15,12 @@
   @brief  Initalize the SNTP with the given timezone and callback
   
   @param  timezone Timezone string for TZ enviroment variable
-  @param  callback Time sync callback funtion
+  @param  callback sync_callback_t time sync callback funtion
   @retval none
 */
-void SNTP::init(const std::string& timezone, sync_callback callback)
+void SNTP::init(const std::string& timezone, sync_callback_t callback)
 {
-  static sync_callback s_callback = callback;
+  static sync_callback_t s_callback = callback;
 
   // Configure timezome for conversion
   setenv("TZ", timezone.c_str(), 1);
