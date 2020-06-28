@@ -21,16 +21,33 @@
 */
 void LEDC::init()
 {
-  // Configure timer 0
-  timer_config_t timer = NVS::get_timer_config(0);
-  configure_timer(timer);
-
-  // Configure channel0
-  channel_config_t channel = NVS::get_channel_config(0);
-  configure_channel(channel);
-
   // Enable fade function
   ledc_fade_func_install(0);
+
+  reconfigure();
+}
+
+/**
+  @brief  Reconfigure all timers and channels
+  
+  @param  none
+  @retval none
+*/
+void LEDC::reconfigure()
+{
+  // Configure all timers
+  for (uint8_t i = 0; i < LEDC_TIMER_MAX; i++)
+  {
+    timer_config_t timer = NVS::get_timer_config(i);
+    configure_timer(timer);
+  }
+
+  for (uint8_t i = 0; i < LEDC_CHANNEL_MAX; i++)
+  {
+    // Configure all channels
+    channel_config_t channel = NVS::get_channel_config(i);
+    configure_channel(channel);
+  }
 }
 
 /**
@@ -71,7 +88,7 @@ void LEDC::configure_channel(const channel_config_t& config)
 {
   if (config.id >= LEDC_CHANNEL_MAX)
   {
-    ESP_LOGW(TAG, "Invalid channel ID: %d", config.id);
+    ESP_LOGW(TAG, "Invalid channel '%d'", config.id);
     return;
   }
 
@@ -84,13 +101,13 @@ void LEDC::configure_channel(const channel_config_t& config)
 
   if (config.gpio == GPIO_NUM_NC || config.gpio >= GPIO_NUM_MAX)
   {
-    ESP_LOGW(TAG, "Invalid GPIO: %d", config.gpio);
+    ESP_LOGW(TAG, "Channel %d: Invalid GPIO '%d'", config.id, config.gpio);
     return;
   }
 
   if (config.timer >= LEDC_TIMER_MAX)
   {
-    ESP_LOGW(TAG, "Invalid timer: %d", config.gpio);
+    ESP_LOGW(TAG, "Channel %d: Invalid timer '%d'", config.id, config.gpio);
     return;
   }
 
@@ -129,7 +146,7 @@ void LEDC::set_intensity(ledc_channel_t channel, double intensity, uint32_t fade
   // Calculate integer intensity based on resolution
   uint32_t range = intensity * ((1 << LED_RESOLUTION) - 1);
   
-  ESP_LOGD(TAG, "Setting channel %d to %d with fade of %d ms.", channel, range, fade_ms);
+  ESP_LOGD(TAG, "Channel %d: Intensity %d with fade of %d ms.", channel, range, fade_ms);
 
   ledc_set_fade_with_time(LED_MODE, channel, range, fade_ms);
   ledc_fade_start(LED_MODE, channel, LEDC_FADE_NO_WAIT);

@@ -73,6 +73,11 @@ extern "C" void app_main()
   {
     EventBits_t events = xEventGroupWaitBits(mainEventGroup, MAIN_EVENT_ALL, pdTRUE, pdFALSE, portMAX_DELAY);
 
+    if (events & MAIN_EVENT_CONFIG_UPDATE)
+    {
+      LEDC::reconfigure();
+    }
+
     if (events & MAIN_EVENT_SYSTEM_TIME_UPDATED)
     {
       // Calculate time of day, and delta to next scheduled event

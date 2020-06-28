@@ -17,6 +17,8 @@ namespace LEDC
   constexpr ledc_mode_t LED_MODE = LEDC_HIGH_SPEED_MODE;
   
   void init(void);
+
+  void reconfigure(void);
   
   void configure_timer(const timer_config_t& config);
   void configure_channel(const channel_config_t& config);

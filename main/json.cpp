@@ -36,8 +36,6 @@ bool JSON::parse_settings(const std::string& jString)
 
       NVS::save_timer_config(config);
     }
-
-    signal_event(MAIN_EVENT_TIMER_CONFIG_UPDATE);
   }
 
   if (root.contains("channels"))
@@ -62,9 +60,11 @@ bool JSON::parse_settings(const std::string& jString)
 
       NVS::save_channel_config(config);
     }
-    
-    signal_event(MAIN_EVENT_CHANNEL_CONFIG_UPDATE);
   }
+
+  // If timers or channels object was present we want to notify of config change
+  if (root.contains("timers") || root.contains("channels"))
+    signal_event(MAIN_EVENT_CONFIG_UPDATE);
 
   if (root.contains("schedule"))
   {
