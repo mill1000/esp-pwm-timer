@@ -191,7 +191,24 @@ var channelTable = new Tabulator("#channelTable", {
   tooltipGenerationMode: "hover",
 });
 
-var schedule = [];
+// "Namespace" to handle channel array
+var Schedule = {
+   _data: [],
+  
+  get data() {
+    return this._data;
+  },
+
+  set data(val) {
+    this._data = val;
+  },
+
+  get dictionary() {
+    let obj = {};
+    this.data.forEach(c => obj[c.tod] = c);
+    return obj;
+  },
+}
 
 function timeEditor(cell, onRendered, success, cancel, editorParams) {
   let editor = document.createElement("input");
@@ -231,8 +248,9 @@ var columnTemplate = [
 
 var scheduleTable = new Tabulator("#scheduleTable", {
   headerSort: false,
-  reactiveData: true, // Update data source as table is editted
-  data: schedule,
+  // reactiveData doesn't appears to work if columns are variable
+  //reactiveData: true,
+  data: Schedule.data,
   layout:"fitDataFill",
   columns: columnTemplate,
   validationMode: "highlight",
@@ -275,6 +293,9 @@ function sendJsonXhrRequest(json, callback) {
 }
 
 function save() {
+  // Force validation of TOD fields
+  scheduleTable.validate("tod");
+
   if (timerTable.getInvalidCells().length)
   {
     Status.set_error("Invalid timer setup. Please fix errors.");
@@ -293,10 +314,13 @@ function save() {
     return;
   }
 
+  // Copy table data into our schedule
+  Schedule.data = scheduleTable.getData();
+
   let settings = {};
   settings.timers = Timers.dictionary;
   settings.channels = Channels.dictionary;
-  settings.schedule = scheduleTable.getData();
+  settings.schedule = Schedule.dictionary;
 
   console.log("Timers:" + JSON.stringify(settings.timers));
   console.log("Channels:" + JSON.stringify(settings.channels));
