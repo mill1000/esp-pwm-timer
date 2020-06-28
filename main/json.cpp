@@ -120,7 +120,7 @@ Schedule::entry_t JSON::parse_schedule_entry(const std::string& jEntry)
       continue;
 
     ledc_channel_t channel = (ledc_channel_t) std::stoi(kv.key());
-    float intensity = kv.value().get<float>();
+    entry[channel] = kv.value().get<float>();
   }
 
   return entry;
