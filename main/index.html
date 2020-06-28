@@ -279,6 +279,9 @@ function sendJsonXhrRequest(json, callback) {
   if (typeof josn != "string")
     json = JSON.stringify(json);
 
+  // Hack to keep empty strings from tabulator from crash json parser
+  json = json.replace(/\:\"\"/gi, ":null");
+
   let xhr = new XMLHttpRequest();
   xhr.onreadystatechange = function () {
     if (xhr.readyState == XMLHttpRequest.DONE) {
