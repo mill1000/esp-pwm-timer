@@ -49,6 +49,11 @@ Tabulator.prototype.moduleBindings.edit.prototype.clearEdited = function (cell) 
   }
 };
 
+function validId(id) {
+  // God damn fucking JS treats 0 and NULL as the same all the fucking time.
+  return id != undefined && id != null;
+}
+
 // Class to represent a timer configuration
 class Timer {
   constructor(index) {
@@ -74,11 +79,11 @@ var Timers = {
   },
 
   get select_list() {
-    return [""].concat(Timers.enabled.map(t => t.id));
+    return [undefined].concat(Timers.enabled.map(t => t.id));
   },
 
   get_name: function(id) {
-    return id !== "" ? this._timers[id].name : "";
+    return (id != null && id != undefined) ? this._timers[id].name : "";
   },
 
   get dictionary() {
@@ -124,7 +129,7 @@ class Channel {
   constructor(index) {
     this.id = index;
     this.name = "Channel " + index;
-    this.timer = "";
+    this.timer = null;
     this.gpio = null;
     this.enabled = false;
   }
@@ -141,7 +146,7 @@ class Channel {
     };
   }
 
-  get valid() { return this.gpio && this.timer >= 0; }
+  get valid() { return validId(this.gpio) && validId(this.timer); }
 }
 
 // "Namespace" to handle channel array
@@ -182,7 +187,7 @@ var channelTable = new Tabulator("#channelTable", {
         listItemFormatter:(v,t) => Timers.get_name(v),
       }, 
       formatter: (c, p, o) => Timers.get_name(c.getValue()),
-      validator: (c,v,p) => Timers.select_list.includes(v),
+      validator: (c,v,p) => v != null ? Timers.select_list.includes(v) : true,
       cellEdited: (c) => { if (!c.getData().valid) c.getRow().getCell("enabled").setValue(false) },
       tooltip: (c) => !c.isValid() ? "Selected timer must be enabled." : "",
     },
