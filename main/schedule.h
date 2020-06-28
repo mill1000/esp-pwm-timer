@@ -51,11 +51,29 @@ class Schedule
         return INVALID_TOD;
 
       auto it = schedule.upper_bound(now);
+      
+      // Loop to start
+      if (it == schedule.end())
+        it = schedule.begin();
+      
+      return it->first;
+    }
 
-      if (it != schedule.end())
-        return it->first;
-      else // Loop to start
-        return schedule.begin()->first;
+    time_of_day_t prev(time_of_day_t now) const
+    {
+      if (schedule.empty())
+        return INVALID_TOD;
+
+      auto it = schedule.upper_bound(now);
+      
+      // Loop to end
+      if (it == schedule.begin())
+        it = schedule.end();
+      
+      // Get element before
+      it--;
+
+      return it->first;
     }
 
     void reset()
