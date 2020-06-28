@@ -17,13 +17,13 @@ class NvsHelper
     // Typedef the callback format for easier use
     typedef void (*nvs_callback_t)(const std::string&, const std::string&, esp_err_t);
 
-    NvsHelper(const std::string& _name) : name(_name) {};
+    NvsHelper(const std::string& name) : _namespace(name) {};
 
     esp_err_t open(nvs_callback_t callback = NULL)
     {      
       this->callback = callback;
 
-      return nvs_open(this->name.c_str(), NVS_READWRITE, &this->handle);
+      return nvs_open(this->_namespace.c_str(), NVS_READWRITE, &this->handle);
     }
 
     esp_err_t commit(void)
@@ -32,7 +32,7 @@ class NvsHelper
       
       result = nvs_commit(handle);
       if (result != ESP_OK && callback != NULL)
-        callback(this->name, "COMMIT", result);
+        callback(this->_namespace, "COMMIT", result);
 
       return result;
     }
@@ -43,9 +43,35 @@ class NvsHelper
 
       result = nvs_erase_all(handle);
       if (result != ESP_OK && callback != NULL)
-        callback(this->name, "ERASE", result);
+        callback(this->_namespace, "ERASE", result);
 
       return result;
+    }
+
+    std::vector<std::string> nvs_find(nvs_type_t type, const std::string& search_key = "")
+    {
+      nvs_iterator_t it = nvs_entry_find(NVS_DEFAULT_PART_NAME, this->_namespace.c_str(), type);
+
+      std::vector<std::string> found_keys;
+
+      while (it != nullptr)
+      {
+        nvs_entry_info_t info;
+        nvs_entry_info(it, &info);
+        it = nvs_entry_next(it);
+
+        if (search_key.empty()) // No search key
+          found_keys.push_back(info.key);
+        else
+        {
+          std::string key(info.key);
+
+          if (key.find(search_key) != std::string::npos)
+            found_keys.push_back(key);
+        } 
+      }
+
+      return found_keys;
     }
 
     template<typename T> esp_err_t nvs_set(const std::string& key, const T& value)
@@ -54,7 +80,7 @@ class NvsHelper
 
       result = _nvs_set(key.c_str(), value);
       if (result != ESP_OK && callback != NULL)
-        callback(this->name, key, result);
+        callback(this->_namespace, key, result);
 
       return result;
     }
@@ -65,7 +91,7 @@ class NvsHelper
 
       result = _nvs_get(key.c_str(), value);
       if (result != ESP_OK && callback != NULL)
-        callback(this->name, key, result);
+        callback(this->_namespace, key, result);
 
       return result;
     }
@@ -74,7 +100,7 @@ class NvsHelper
     nvs_handle_t handle;
     nvs_callback_t callback = NULL;
     esp_err_t result = ESP_OK; // Result of last operation
-    const std::string name; // Namespace
+    const std::string _namespace;
 
     /**
       @brief  Overloaded wrapper for nvs_set to expand to nvs_set_T

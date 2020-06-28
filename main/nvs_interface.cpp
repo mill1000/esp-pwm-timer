@@ -147,5 +147,27 @@ void NVS::commit_schedule()
 */
 void NVS::save_schedule_entry_json(const std::string& tod, const std::string& json)
 {
-  parameters.nvs_set<std::string>(tod, json);
+  schedule.nvs_set<std::string>(tod, json);
 }
+
+/**
+  @brief  Fetch all schedule entry JSON from NVS
+  
+  @param  none
+  @retval std::map<std::string, std::string>
+*/
+std::map<std::string, std::string> NVS::get_schedule_json()
+{ 
+  // Find all keys in the schedule NVS
+  const std::vector<std::string> keys = schedule.nvs_find(NVS_TYPE_STR);
+
+  std::map<std::string, std::string> scheduleJson;
+  for (auto& k : keys)
+  {
+    if (schedule.nvs_get<std::string>(k, scheduleJson[k]) != ESP_OK)
+      ESP_LOGW(TAG, "Failed to get NVS schedule entry for '%s'", k.c_str());
+  }
+
+  return scheduleJson;
+}
+
