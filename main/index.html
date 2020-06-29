@@ -56,18 +56,25 @@ function validId(id) {
 
 // Class to represent a timer configuration
 class Timer {
-  constructor(index) {
-    this.id = index;
-    this.name = "Timer " + index;
-    this.freq = 120;
+  constructor(opts = {}) {
+    this.id = opts.id
+    this.freq = opts.freq || 60;
   }
 
   get valid() { return this.freq ? true : false; }
+
+  get name() { 
+    return "Timer " + this.id;
+  }
+
+  set name(v) {
+    null;
+  }
 }
 
 // "Namespace" to handle timer array
 var Timers = {
-  _timers: Array.from(Array(4).keys()).map(x => new Timer(x)),
+  _timers: Array.from(Array(4).keys()).map(x => new Timer({id: x})),
   
   get all() {
     return this._timers;
@@ -78,7 +85,7 @@ var Timers = {
   },
 
   get_name: function(id) {
-    return this._timers[id].name;
+    return validId(id) ? this._timers[id].name : "";
   },
 
   get dictionary() {
@@ -86,6 +93,12 @@ var Timers = {
     let obj = {};
     this.all.forEach(t => obj[t.id] = t);
     return obj;
+  },
+
+  from_dictionary: function(dict) {
+    let arr = [];
+    Object.values(dict).forEach(v => arr.push(new Timer(v)));
+    return this._timers = arr;
   },
 }
 
@@ -115,12 +128,12 @@ var timerTable = new Tabulator("#timerTable", {
 
 // Class to represent a channel configuration
 class Channel {
-  constructor(index) {
-    this.id = index;
-    this.name = "Channel " + index;
-    this.timer = 0;
-    this.gpio = null;
-    this.enabled = false;
+  constructor(opts = {}) {
+    this.id = opts.id;
+    this.name = opts.name || "Channel " + opts.id;
+    this.timer = opts.timer || 0;
+    this.gpio = opts.gpio || null;
+    this.enabled = opts.enabled || false;
   }
 
   get columnDefinition() {
@@ -140,7 +153,7 @@ class Channel {
 
 // "Namespace" to handle channel array
 var Channels = {
-  _channels: Array.from(Array(8).keys()).map(x => new Channel(x)),
+  _channels: Array.from(Array(8).keys()).map(x => new Channel({id: x})),
   
   get all() {
     return this._channels;
@@ -158,6 +171,12 @@ var Channels = {
     let obj = {};
     this.all.forEach(c => obj[c.id] = c);
     return obj;
+  },
+
+  from_dictionary: function(dict) {
+    let arr = [];
+    Object.values(dict).forEach(v => arr.push(new Channel(v)));
+    return this._channels = arr;
   },
 }
 
@@ -207,6 +226,12 @@ var Schedule = {
     let obj = {};
     this.data.forEach(c => obj[c.tod] = c);
     return obj;
+  },
+
+  from_dictionary: function(dict) {
+    let arr = [];
+    Object.values(dict).forEach(v => arr.push(v));
+    return this.data = arr;
   },
 }
 
@@ -295,6 +320,30 @@ function sendJsonXhrRequest(json, callback) {
   xhr.send(json);
 }
 
+function getJsonXhrRequest() {
+  let promise = new Promise((resolve, reject) => {
+    let xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = () => {
+      if (xhr.readyState == XMLHttpRequest.DONE) {
+        if (xhr.status == 200) {
+          resolve(JSON.parse(xhr.responseText));
+        }
+        else {
+          message = "Failed to load settings. Error: "
+          message += (xhr.status != 0) ? xhr.responseText : "Timeout";
+          reject(message);
+        }
+      }
+    };
+
+    xhr.open("GET", window.location.href + "/?action=get");
+    xhr.timeout = 5000;
+    xhr.send();
+  });
+
+  return promise;
+}
+
 function save() {
   // Force validation of TOD fields
   scheduleTable.validate("tod");
@@ -339,9 +388,28 @@ function save() {
     }
   }
 
-  Status.set("Sending data...");
+  Status.set("Sending settings...");
   sendJsonXhrRequest(settings, setCallback);
 }
+
+function load() {
+  Status.set("Loading settings...");
+  getJsonXhrRequest().catch((message) => {
+    Status.set_error(message);
+  }).then((settings) => {
+    timerTable.setData(Timers.from_dictionary(settings.timers));
+    channelTable.setData(Channels.from_dictionary(settings.channels));
+
+    // Manually trigger column update dumb!
+    scheduleTable.setColumns(columnTemplate.concat(Channels.columns));
+
+    scheduleTable.replaceData(Schedule.from_dictionary(settings.schedule));
+
+    Status.set_success("Settings loaded.");
+  });
+}
+
+window.onload = () => load();
 </script>
 </body>
 </html>

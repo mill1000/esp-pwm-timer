@@ -58,7 +58,7 @@ static void httpEventHandler(struct mg_connection* nc, int ev, void* ev_data)
       {
         std::string settings = JSON::get_settings();
 
-        ESP_LOGD(TAG, "Get = %s", settings.c_str());
+        ESP_LOGI(TAG, "Get = %s", settings.c_str());
 
         mg_send_head(nc, 200, settings.length(), "Content-Type: application/json");
         mg_send(nc, settings.c_str(), settings.length());
