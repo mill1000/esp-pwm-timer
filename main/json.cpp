@@ -65,9 +65,9 @@ bool JSON::parse_settings(const std::string& jString)
       config.enabled = channel["enabled"].get<bool>();
       config.timer = JSON::get_or_default<ledc_timer_t>(channel, "timer", LEDC_TIMER_MAX);
       config.gpio = JSON::get_or_default<gpio_num_t>(channel, "gpio", GPIO_NUM_NC);
-      //config.name = channel["name"].get<std::string>();
+      std::string name = channel["name"].get<std::string>();
 
-      NVS::save_channel_config(config);
+      NVS::save_channel_config(name, config);
     }
   }
 
@@ -150,13 +150,17 @@ std::string JSON::get_settings()
   nlohmann::json channels = nlohmann::json::object();
   for (uint8_t i = 0; i < LEDC_CHANNEL_MAX; i++)
   {
-    channel_config_t config = NVS::get_channel_config(i);
+    auto data = NVS::get_channel_config(i);
+
+    std::string& name = data.first;
+    channel_config_t config = data.second;
     
     nlohmann::json& channel = channels[std::to_string(i)];
     channel = {
         {"id", config.id},
         {"enabled", config.enabled},
-        {"timer", config.timer}
+        {"timer", config.timer},
+        {"name", name}
     };
 
     // Special handling for GPIO
@@ -164,6 +168,7 @@ std::string JSON::get_settings()
       channel["gpio"] = config.gpio;
     else
       channel["gpio"] = nullptr;
+      
   }
 
   nlohmann::json schedule = nlohmann::json::object();

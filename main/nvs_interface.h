@@ -14,8 +14,8 @@ namespace NVS
   void save_timer_config(const timer_config_t& config);
   timer_config_t get_timer_config(uint32_t id);
 
-  void save_channel_config(const channel_config_t& config);
-  channel_config_t get_channel_config(uint32_t id);
+  void save_channel_config(const std::string& name, const channel_config_t& config);
+  std::pair<std::string, channel_config_t> get_channel_config(uint32_t id);
 
   void erase_schedule(void);
   void commit_schedule(void);

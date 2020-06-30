@@ -85,15 +85,18 @@ timer_config_t NVS::get_timer_config(uint32_t id)
 /**
   @brief  Save a PWM channel configuration to the NVS
   
+  @param  name Friendly name of the channel
   @param  config channel_config_t to save to the NVS
   @retval none
 */
-void NVS::save_channel_config(const channel_config_t& config)
+void NVS::save_channel_config(const std::string& name, const channel_config_t& config)
 {
   char key[16] = {0};
   snprintf(key, 16, "channel%d", config.id);
 
   parameters.nvs_set<channel_config_t>(std::string(key), config);
+
+  parameters.nvs_set<std::string>(std::string(key) + "_name", name);
 
   parameters.commit();
 }
@@ -102,9 +105,9 @@ void NVS::save_channel_config(const channel_config_t& config)
   @brief  Fetch a PWM channel configuration from the NVS
   
   @param  id ID of timer
-  @retval channel_config_t
+  @retval std::pair<std::string, channel_config_t>
 */
-channel_config_t NVS::get_channel_config(uint32_t id)
+std::pair<std::string, channel_config_t> NVS::get_channel_config(uint32_t id)
 {
   char key[16] = {0};
   snprintf(key, 16, "channel%d", id);
@@ -112,7 +115,10 @@ channel_config_t NVS::get_channel_config(uint32_t id)
   channel_config_t config;
   parameters.nvs_get<channel_config_t>(std::string(key), config);
 
-  return config;
+  std::string name;
+  parameters.nvs_get<std::string>(std::string(key) + "_name", name);
+
+  return std::make_pair(name, config);
 }
 
 

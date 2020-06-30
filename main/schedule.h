@@ -21,7 +21,6 @@ typedef struct channel_config_t
   ledc_timer_t timer;
   gpio_num_t gpio;
   bool enabled;
-  //std::string name;
 } channel_config_t;
 
 class Schedule

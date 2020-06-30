@@ -45,7 +45,7 @@ void LEDC::reconfigure()
   for (uint8_t i = 0; i < LEDC_CHANNEL_MAX; i++)
   {
     // Configure all channels
-    channel_config_t channel = NVS::get_channel_config(i);
+    channel_config_t channel = NVS::get_channel_config(i).second;
     configure_channel(channel);
   }
 }
