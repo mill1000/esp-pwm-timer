@@ -93,7 +93,7 @@ extern "C" void app_main()
         schedule.set(tod, entry);
       }
 
-      Schedule::time_of_day_t prev = schedule.prev(Schedule::get_time_of_day(time(NULL)));
+      Schedule::time_of_day_t prev = schedule.prev(Schedule::get_time_of_day());
 
       // Reset event ID to previous and trigger timer update
       vTimerSetTimerID(scheduleTimer, (void*) prev);
@@ -103,7 +103,7 @@ extern "C" void app_main()
     if (events & MAIN_EVENT_SYSTEM_TIME_UPDATED)
     {
       // Calculate time of day, and delta to next scheduled event
-      Schedule::time_of_day_t tod = Schedule::get_time_of_day(time(NULL));
+      Schedule::time_of_day_t tod = Schedule::get_time_of_day();
       Schedule::time_of_day_t delta = Schedule::delta(schedule.next(tod), tod);
 
       // If invalid TOD don't do anything
@@ -129,7 +129,7 @@ extern "C" void app_main()
     if (events & MAIN_EVENT_LED_TIMER_EXPIRED)
     {
       // Calculate time of day, next TOD and delta to next scheduled event
-      Schedule::time_of_day_t tod = Schedule::get_time_of_day(time(NULL));
+      Schedule::time_of_day_t tod = Schedule::get_time_of_day();
       Schedule::time_of_day_t next = schedule.next(tod);
 
       // If invalid TOD don't do anything

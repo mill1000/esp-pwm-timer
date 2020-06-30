@@ -96,8 +96,13 @@ class Schedule
         return empty;
     }
 
-    static time_of_day_t get_time_of_day(time_t now)
+    static time_of_day_t get_time_of_day()
     {
+      time_t utc = time(nullptr);
+      struct tm* local_tm = localtime(&utc);
+
+      time_t now = local_tm->tm_hour * 3600 + local_tm->tm_min * 60 + local_tm->tm_sec;
+
       return now % seconds_per_day;
     }
 
@@ -108,7 +113,7 @@ class Schedule
 
       time_t time = timeinfo.tm_hour * 3600 + timeinfo.tm_min * 60;
 
-      return get_time_of_day(time);
+      return time % seconds_per_day;
     }
 
     static time_of_day_t delta(time_of_day_t next, time_of_day_t prev)
