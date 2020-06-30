@@ -160,7 +160,7 @@ extern "C" void app_main()
       for (auto pair : schedule[expectedTOD])
       {
         ESP_LOGI(TAG, "Setting channel %d to %g", pair.first, pair.second);
-        LEDC::set_intensity((ledc_channel_t) pair.first, pair.second, 0);
+        LEDC::set_intensity((ledc_channel_t) pair.first, pair.second);
       }
     }
   }
