@@ -3,7 +3,6 @@
 
 #include "schedule.h"
 
-
 namespace NVS
 {
   constexpr const char* PARAMETER_NAMESPACE = "pwm_config";

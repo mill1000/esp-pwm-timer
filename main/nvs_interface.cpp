@@ -121,7 +121,6 @@ std::pair<std::string, channel_config_t> NVS::get_channel_config(uint32_t id)
   return std::make_pair(name, config);
 }
 
-
 /**
   @brief  Erase all data in the schedule NVS. Does not commit!
   
