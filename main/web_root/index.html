@@ -214,17 +214,20 @@ window.onload = () => load();
 
 // Create the modal object
 var modal = new tingle.modal({
-    footer: true,
-    closeMethods: ['overlay', 'escape'],
-    closeLabel: "Close",
-    onOpen:() => {
-      // Attach timepickr to our time inputs
-      let picker = flatpickr(".time-picker", {
-      enableTime: true,
-      noCalendar: true,
-      dateFormat: "H:i",
+  footer: true,
+  closeMethods: ['overlay', 'escape'],
+  closeLabel: "Close",
+  onOpen: () => {
+    // Attach timepickr to our time inputs
+    document.querySelectorAll(".time-picker").forEach((p) => {
+      let picker = flatpickr(p, {
+        enableTime: true,
+        noCalendar: true,
+        dateFormat: "H:i",
+        defaultDate: p.value,
       });
-    },
+    });
+  },
 });
 
 // Add a function which opens the Modal and returns a promise to be resolved
