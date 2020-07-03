@@ -58,7 +58,7 @@ function validId(id) {
 class Timer {
   constructor(opts = {}) {
     this.id = opts.id
-    this.freq = opts.freq || 60;
+    this.freq = opts.freq || 500;
   }
 
   get valid() { return this.freq ? true : false; }
