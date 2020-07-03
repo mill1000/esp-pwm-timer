@@ -10,9 +10,6 @@
 
 #define TAG "HTTP"
 
-extern const unsigned char index_html_start[] asm("_binary_index_html_start");
-extern const unsigned char index_html_end[]   asm("_binary_index_html_end");
-
 /**
   @brief  Sends HTTP responses on the provided connection
   
@@ -47,11 +44,13 @@ static void httpEventHandler(struct mg_connection* nc, int ev, void* ev_data)
       char action[4];
       if (mg_get_http_var(&hm->query_string, "action", action, sizeof(action)) == -1)
       {
-        uint32_t length = (uint32_t) (index_html_end - index_html_start);
-        // No action requested. Serve the page
-        mg_send_head(nc, 200, length, "Content-Type: text/html");
-        mg_send(nc, (void*) index_html_start, length);
-        nc->flags |= MG_F_SEND_AND_CLOSE;    
+        struct mg_serve_http_opts opts;
+
+        memset(&opts, 0, sizeof(opts));
+        opts.document_root = "/spiffs";
+        opts.enable_directory_listing = "no";
+
+        mg_serve_http(nc, (struct http_message *) ev_data, opts);
         break;
       }
       else if (strcmp(action, "get") == 0) // Get JSON values

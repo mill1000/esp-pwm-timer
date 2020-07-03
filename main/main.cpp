@@ -10,6 +10,7 @@
 #include "main.h"
 #include "wifi.h"
 #include "http.h"
+#include "spiffs.h"
 #include "sntp_interface.h"
 #include "schedule.h"
 #include "ledc_interface.h"
@@ -36,6 +37,9 @@ extern "C" void app_main()
 
   // Initalize WiFi and connect to configured network
   WiFi::init_station();
+
+  // Init filesystem
+  SPIFFS::init();
 
   // Start the HTTP task
   xTaskCreate(httpTask, "HTTPTask", 8192, NULL, 1, NULL);
