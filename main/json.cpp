@@ -141,7 +141,8 @@ std::string JSON::get_settings()
     timer_config_t config = NVS::get_timer_config(i);
     
     // This fucking JSON lib
-    timers[std::to_string(i)] = {
+    timers[std::to_string(i)] = 
+    {
         {"id", config.id},
         {"freq", config.frequency_Hz},
     };
@@ -156,7 +157,8 @@ std::string JSON::get_settings()
     channel_config_t config = data.second;
     
     nlohmann::json& channel = channels[std::to_string(i)];
-    channel = {
+    channel = 
+    {
         {"id", config.id},
         {"enabled", config.enabled},
         {"timer", config.timer},
