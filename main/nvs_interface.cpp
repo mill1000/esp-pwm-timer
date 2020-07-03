@@ -39,12 +39,47 @@ void NVS::init()
     return;
   }
 
+  uint8_t version = UINT8_MAX;
+  if (parameters.nvs_get<uint8_t>("version", version) == ESP_ERR_NVS_NOT_FOUND)
+  {
+    ESP_LOGW(TAG, "Invalid NVS version in namespace '%s'. Erasing.", PARAMETER_NAMESPACE);
+    reset_configuration();
+  }
+
   // Open a second namespace just to hold the schedule
   if (schedule.open(&helper_callback) != ESP_OK)
   {
     ESP_LOGE(TAG, "Error opening NVS namespace '%s'.", SCHEDULE_NAMESPACE);
     return;
   }
+
+  version = UINT8_MAX;
+  if (schedule.nvs_get<uint8_t>("version", version) == ESP_ERR_NVS_NOT_FOUND)
+  {
+    ESP_LOGW(TAG, "Invalid NVS version in namespace '%s'. Erasing.", SCHEDULE_NAMESPACE);
+    erase_schedule();
+  }
+}
+
+/**
+  @brief  Set default configuration parameters
+  
+  @param  none
+  @retval none
+*/
+void NVS::reset_configuration()
+{
+  parameters.erase_all();
+  
+  for (uint8_t i = 0; i < LEDC_TIMER_MAX; i++)
+    save_timer_config((timer_config_t){.id = (ledc_timer_t)i, .frequency_Hz = 500});
+ 
+ for (uint8_t i = 0; i < LEDC_CHANNEL_MAX; i++)
+    save_channel_config("", (channel_config_t){.id = (ledc_channel_t)i, .timer = LEDC_TIMER_0, .gpio = GPIO_NUM_NC, .enabled = false});
+
+  // Save the version too
+  parameters.nvs_set<uint8_t>("version", NVS_VERSION);
+  parameters.commit();
 }
 
 /**
@@ -130,6 +165,10 @@ std::pair<std::string, channel_config_t> NVS::get_channel_config(uint32_t id)
 void NVS::erase_schedule()
 {
   schedule.erase_all();
+
+  // Restore the version byte 
+  schedule.nvs_set<uint8_t>("version", NVS_VERSION);
+  schedule.commit();
 }
 
 /**

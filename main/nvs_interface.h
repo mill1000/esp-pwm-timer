@@ -8,7 +8,11 @@ namespace NVS
   constexpr const char* PARAMETER_NAMESPACE = "pwm_config";
   constexpr const char* SCHEDULE_NAMESPACE = "pwm_schedule";
 
+  constexpr uint8_t NVS_VERSION = 0;
+
   void init(void);
+
+  void reset_configuration(void);
 
   void save_timer_config(const timer_config_t& config);
   timer_config_t get_timer_config(uint32_t id);
