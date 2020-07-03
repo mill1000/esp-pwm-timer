@@ -84,7 +84,11 @@ class Channel {
       editor: "number", editorParams: { min: 0, max: 100, step: 10, mask: "999" },
       validator: "max:100",
       hozAlign: "center",
-      minWidth:"100em"
+      minWidth: "100em",
+      headerContextMenu:
+        [
+          { label: "Add Sweep", action: generateSweep, },
+        ],
     };
   }
 
@@ -291,4 +295,21 @@ function load() {
 
     Status.set_success("Settings loaded.");
   });
+}
+
+function* range(start, end, step) {
+  if (step == 0 || start == end)
+    return;
+    
+  for (let i = start; i <= end; i+=step) {
+      yield i;
+  }
+}
+
+function cubic_interpolate(deltaY, x) {
+  return (3 * deltaY * (x ** 2)) - (2 * deltaY * (x ** 3))
+}
+
+function linear_interpolate(deltaY, x) {
+  return deltaY * x;
 }

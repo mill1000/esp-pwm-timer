@@ -1,0 +1,54 @@
+.tingle-modal-box {
+  width: 40%;
+  margin-top: 10%;
+}
+
+.tingle-modal-box__content {
+  padding: 1.5rem;
+}
+
+.tingle-modal-box__footer {
+  padding: .75rem;
+}
+
+.tingle-btn {
+  padding: .5rem .75rem;
+  border-radius: 4px;
+}
+
+.tingle-modal {
+  background: rgba(0, 0, 0, .55);
+}
+
+@keyframes scale {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.modal-header > h2:first-child {
+  margin-top: 0;
+  font-weight: 500;
+}
+
+#modal-form {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  grid-row-gap: .75rem;
+  align-items: center; 
+}
+
+#modal-form > label {
+  grid-column: 1 / 2;
+}
+
+#modal-form > .radio-group, #modal-form > input[type=number] {
+  grid-column: 2 / 3;
+}
+
+.radio-group label {
+  margin-left: .1rem;
+}

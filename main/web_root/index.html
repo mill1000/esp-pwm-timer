@@ -11,32 +11,72 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <!-- moment.js CDN -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.27.0/moment.min.js"></script>
-<script src="index.js"></script>
+<!-- tingle.js CDN -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tingle/0.15.3/tingle.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tingle/0.15.3/tingle.min.js"></script>
+
+<!-- Local stylesheet for customizing modal -->
+<link rel="stylesheet" href="modal.css">
 <style>
+  html {font-family: sans-serif;}
   .tabulator-col-title {text-align: center;}
   .container {display: flex; width:auto; justify-content: space-evenly; padding-left:5%; padding-right:5%}
   #timerTable {width:40%; margin-right:5%}
   #channelTable {width:60%}
   #scheduleTable {width: 100%;}
-  html {font-family: sans-serif;}  
 </style>
 </head>
+
 <body>
 <div class="container">
 <div id="timerTable"></div><div id="channelTable"></div>
 </div>
-<br/>
+
 <div class="container"></div>
 <button onclick="scheduleTable.addRow()">Add Time</button>
 <button onclick="save()">Save</button>
 <span id="status"></span>
 </div>
-<br/>
+
 <div class="container">
 <div id="scheduleTable"></div>
 </div>
-<script type="text/javascript">
 
+<div id="modal" class="tingle-modal modal-content">
+<div class="modal-header">
+<h2>Add Sweep</h2>
+</div>
+<form id="modal-form">
+  <label for="startTime">Start Time</label>
+  <input class="time-picker" type="time" id="startTime" required/>
+
+  <label for="startIntensity">Start Intensity</label>
+  <input id="startIntensity" type="number" min="0" max="100" required/>
+
+  <label for="endTime">End Time</label>
+  <input class="time-picker" type="time" id="endTime" required/>
+
+  <label for="endIntensity">End Intensity</label>
+  <input id="endIntensity" type="number" min="0" max="100" required/>
+
+  <label for="mode-group">Mode</label>
+  <div class="radio-group" id="mode-group">
+    <input type="radio" name="mode" id="cubic"  value="cubic" checked><label for="cubic">Cubic</label>
+    <input type="radio" name="mode" id="linear" value="linear"><label for="linear">Linear</label>
+  </div>
+  
+  <label for="step-group">Step Type</label>
+  <div class="radio-group" id="step-group">
+    <input type="radio" name="stepMode" id="time" value="time" onchange='document.getElementById("stepLabel").innerHTML="Minutes Per"' checked><label for="time">Time</label>
+    <input type="radio" name="stepMode" id="count" value="count" onchange='document.getElementById("stepLabel").innerHTML="Step Count"'><label for="count">Count</label>
+  </div>
+
+  <label id="stepLabel" for="step">Minutes Per</label>
+  <input id="step" type="number" min="1" max ="120" value="10" required/>
+</form>
+</div>
+<script src="index.js"></script>
+<script type="text/javascript">
 // Define the system config table
 var timerTable = new Tabulator("#timerTable", {
   headerSort: false, // Don't allow sorting
@@ -59,6 +99,60 @@ var timerTable = new Tabulator("#timerTable", {
   validationMode: "highlight",
   tooltipGenerationMode: "hover",
 });
+
+
+function generateSweep(e, column)
+{
+  modal.open_with_promise().then((formData) => {
+    // Check the channel ID of the column selected
+    let id = column.getField();
+
+    // Get start and end TODs as moment objects
+    let startT = moment(formData.startTime.value, "HH:mm");
+    let endT = moment(formData.endTime.value, "HH:mm");
+    
+    // Calculate the time delta in minutes, and desired step size
+    let deltaT = moment.duration(endT - startT).asMinutes();
+    let step = 0;
+    switch (formData.stepMode.value)
+    {
+      case "time":
+        step = parseInt(formData.step.value);
+        break;
+
+      case "count":
+        step = deltaT / parseInt(formData.step.value);
+        break;
+    }
+
+    // Calculate the intensity delta
+    let startI = parseInt(formData.startIntensity.value);
+    let endI = parseInt(formData.endIntensity.value);
+    let deltaI = endI - startI;
+
+    // Select the interpolation function
+    let interpolate = formData.mode.value == "cubic" ? cubic_interpolate : linear_interpolate;
+
+    let newRows = [];
+    let stepT = startT;
+    for (t of range(0, deltaT, step)) {
+      
+      let stepY = interpolate(deltaI, t/deltaT)
+
+      row = {}
+      row["tod"] = stepT.format("HH:mm");
+      row[id] = Math.round(startI + stepY);
+
+      newRows.push(row);
+
+      stepT = stepT.add(step, "minutes")
+    }
+
+    // Add and resort table
+    scheduleTable.updateOrAddData(newRows);
+    scheduleTable.setSort("tod", "asc");
+  });
+}
 
 // Define the channel table
 var channelTable = new Tabulator("#channelTable", {
@@ -105,7 +199,7 @@ var columnTemplate = [
 
 var scheduleTable = new Tabulator("#scheduleTable", {
   headerSort: false,
-  // reactiveData doesn't appears to work if columns are variable
+  // reactiveData doesn't appear to work if columns are variable
   //reactiveData: true,
   data: Schedule.data,
   layout:"fitDataFill",
@@ -113,9 +207,58 @@ var scheduleTable = new Tabulator("#scheduleTable", {
   validationMode: "highlight",
   tooltipGenerationMode: "hover",
   movableRows: true,
+  index:"tod",
 });
 
 window.onload = () => load();
+
+// Create the modal object
+var modal = new tingle.modal({
+    footer: true,
+    closeMethods: ['overlay', 'escape'],
+    closeLabel: "Close",
+    onOpen:() => {
+      // Attach timepickr to our time inputs
+      let picker = flatpickr(".time-picker", {
+      enableTime: true,
+      noCalendar: true,
+      dateFormat: "H:i",
+      });
+    },
+});
+
+// Add a function which opens the Modal and returns a promise to be resolved
+// on close
+modal.open_with_promise = function ()
+{
+  let promise = new Promise((resolve, reject) => {
+    this.promise_resolve = resolve;
+    this.promise_reject = reject;
+    this.open();
+  });
+
+  return promise;
+}
+
+// Close and resolve promise if form is OK
+modal.addFooterBtn('OK', 'tingle-btn tingle-btn--pull-right', () => {
+  if (document.getElementById("modal-form").reportValidity())
+  {
+    modal.promise_resolve(document.getElementById("modal-form").elements);
+    modal.close();
+  }
+});
+
+// Close and reject promise
+modal.addFooterBtn('Cancel', 'tingle-btn tingle-btn--pull-right', () => {
+  modal.promise_reject();
+  modal.close();
+});
+
+// Set the content
+modal.setContent(document.querySelector('.modal-content').innerHTML);
+ // Remove the HTML from the DOM so ids are unique
+document.querySelector('.modal-content').innerHTML = ""
 </script>
 </body>
 </html>
