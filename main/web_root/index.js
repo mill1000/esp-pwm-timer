@@ -13,9 +13,9 @@ Tabulator.prototype.moduleBindings.edit.prototype.clearEdited = function (cell) 
   }
 };
 
-function validId(id) {
+function nullOrEmpty(id) {
   // We want 0 as a valid ID but want to exlude null, undef and empty
-  return id != undefined && id != null && id !== "";
+  return id == undefined || id == null || id === "";
 }
 
 // Class to represent a timer configuration
@@ -49,7 +49,7 @@ var Timers = {
   },
 
   get_name: function(id) {
-    return validId(id) ? this._timers[id].name : "";
+    return !nullOrEmpty(id) ? this._timers[id].name : "";
   },
 
   get dictionary() {
@@ -92,7 +92,7 @@ class Channel {
     };
   }
 
-  get valid() { return validId(this.gpio) && validId(this.timer); }
+  get valid() { return !nullOrEmpty(this.gpio) && !nullOrEmpty(this.timer); }
 }
 
 // "Namespace" to handle channel array
