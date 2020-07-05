@@ -14,6 +14,9 @@
 <!-- tingle.js CDN -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tingle/0.15.3/tingle.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tingle/0.15.3/tingle.min.js"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-colorschemes@0.4.0/dist/chartjs-plugin-colorschemes.min.js"></script>
 
 <!-- Local stylesheet for customizing modal -->
 <link rel="stylesheet" href="modal.css">
@@ -25,6 +28,7 @@
   #timerTable {width:40%; margin-right:5%}
   #channelTable {width:60%}
   #scheduleTable {width: 100%;}
+  .chart-container {position: relative; margin: auto; height: 25vh; width: 90vw;}
 </style>
 </head>
 
@@ -41,6 +45,10 @@
 
 <div class="container">
 <div id="scheduleTable"></div>
+</div>
+
+<div class="chart-container">
+<canvas id="scheduleChart"></canvas>
 </div>
 
 <div id="modal" class="tingle-modal modal-content">
@@ -198,6 +206,7 @@ var columnTemplate = [
 ];
 
 var scheduleTable = new Tabulator("#scheduleTable", {
+  height:"35vh",
   headerSort: false,
   // reactiveData doesn't appear to work if columns are variable
   //reactiveData: true,
@@ -208,6 +217,8 @@ var scheduleTable = new Tabulator("#scheduleTable", {
   tooltipGenerationMode: "hover",
   movableRows: true,
   index:"tod",
+  dataEdited: updateScheduleData,
+  dataLoaded: updateScheduleData,
 });
 
 window.onload = () => load();
@@ -261,6 +272,49 @@ modal.addFooterBtn("Cancel", "tingle-btn tingle-btn--pull-right", () => {
 modal.setContent(document.querySelector(".modal-content").innerHTML);
  // Remove the HTML from the DOM so ids are unique
 document.querySelector(".modal-content").innerHTML = ""
+
+var context = document.getElementById("scheduleChart").getContext("2d");
+var chart = new Chart(context, {
+  type: "line",
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    datasets: {
+      line: {
+        steppedLine: "before",
+        fill: false,
+      },
+    },
+    scales: {
+      xAxes: [{
+        type: "time",
+        time: {
+          parser: "HH:mm",
+          minUnit: "hour",
+        },
+        ticks: {
+          min: "00:00",
+          max: "24:00",
+        },
+      }],
+      yAxes: [{
+        ticks: {
+          min: 0,
+          max: 100,
+        },
+      }],
+    },
+    tooltips: {
+      position: "nearest",
+      mode: "index",
+    },
+    plugins: {
+      colorschemes: {
+        scheme: "brewer.Accent8"
+      }
+    }
+  }
+});
 </script>
 </body>
 </html>

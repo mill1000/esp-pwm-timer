@@ -142,6 +142,21 @@ var Schedule = {
     return obj;
   },
 
+  get datasets() {
+    // Construct a dataset for each enabled channel
+    let datasets = Channels.enabled.map(c => ({label: c.name, data:[]}));
+
+    this.data.forEach(row => {
+      let ids = Object.keys(row).filter(x => x !== "tod");
+      ids.forEach(id => {
+        if (!nullOrEmpty(row[id]))
+          datasets[id].data.push({x: row.tod, y:row[id]});
+      })
+    });
+
+    return datasets;
+  },
+
   from_dictionary: function(dict) {
     let arr = [];
     Object.values(dict).forEach(v => arr.push(v));
@@ -312,4 +327,19 @@ function cubic_interpolate(deltaY, x) {
 
 function linear_interpolate(deltaY, x) {
   return deltaY * x;
+}
+
+function updateScheduleData(data) {
+  // Store the data back to the Schedule object and sort it
+  Schedule.data = data;
+  Schedule.data.sort((f,s) => { 
+    return moment(f.tod, "HH:mm") - moment(s.tod, "HH:mm");
+  });
+  
+  // Update chart object if it exists
+  if (chart)
+  {
+    chart.data.datasets = Schedule.datasets;
+    chart.update();
+  }
 }
