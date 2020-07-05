@@ -74,7 +74,7 @@ void NVS::reset_configuration()
   for (uint8_t i = 0; i < LEDC_TIMER_MAX; i++)
     save_timer_config((timer_config_t){.id = (ledc_timer_t)i, .frequency_Hz = 500});
  
- for (uint8_t i = 0; i < LEDC_CHANNEL_MAX; i++)
+  for (uint8_t i = 0; i < LEDC_CHANNEL_MAX; i++)
     save_channel_config("", (channel_config_t){.id = (ledc_channel_t)i, .timer = LEDC_TIMER_0, .gpio = GPIO_NUM_NC, .enabled = false});
 
   // Save the version too
@@ -214,4 +214,3 @@ std::map<std::string, std::string> NVS::get_schedule_json()
 
   return scheduleJson;
 }
-

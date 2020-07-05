@@ -8,5 +8,4 @@ namespace WiFi
   void init_station(void);
 }
 
-
 #endif

@@ -111,10 +111,10 @@ void httpTask(void * pvParameters)
   struct mg_connection* connection = mg_bind(&manager, "80", httpEventHandler);
   if (connection == NULL)
   {
-      ESP_LOGE(TAG, "Failed to bind port.");
-      mg_mgr_free(&manager);
-      vTaskDelete(NULL);
-      return;
+    ESP_LOGE(TAG, "Failed to bind port.");
+    mg_mgr_free(&manager);
+    vTaskDelete(NULL);
+    return;
   }
 
   // Enable HTTP on the connection

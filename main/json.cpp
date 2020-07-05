@@ -143,8 +143,8 @@ std::string JSON::get_settings()
     // This fucking JSON lib
     timers[std::to_string(i)] = 
     {
-        {"id", config.id},
-        {"freq", config.frequency_Hz},
+      {"id", config.id},
+      {"freq", config.frequency_Hz},
     };
   }
 
@@ -159,10 +159,10 @@ std::string JSON::get_settings()
     nlohmann::json& channel = channels[std::to_string(i)];
     channel = 
     {
-        {"id", config.id},
-        {"enabled", config.enabled},
-        {"timer", config.timer},
-        {"name", name}
+      {"id", config.id},
+      {"enabled", config.enabled},
+      {"timer", config.timer},
+      {"name", name}
     };
 
     // Special handling for GPIO
