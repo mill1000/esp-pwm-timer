@@ -7,6 +7,7 @@
 #include "http.h"
 #include "mongoose.h"
 #include "json.h"
+#include "ota_interface.h"
 
 #define TAG "HTTP"
 
@@ -94,6 +95,53 @@ static void httpEventHandler(struct mg_connection* nc, int ev, void* ev_data)
 }
 
 /**
+  @brief  Mongoose event handler for the OTA firmware update
+  
+  @param  nc Mongoose connection
+  @param  ev Mongoose event calling the function
+  @param  ev_data Event data pointer
+  @retval none
+*/
+static void otaEventHandler(struct mg_connection* nc, int ev, void* ev_data)
+{
+  switch(ev)
+  {
+    case MG_EV_HTTP_REQUEST:
+    {
+      // Serve the page from the SPIFFS
+      mg_http_serve_file(nc, (struct http_message *) ev_data, "/spiffs/ota.html", mg_mk_str("text/html"), mg_mk_str(""));
+      break;
+    }
+
+    case MG_EV_HTTP_PART_BEGIN:
+    {
+      ESP_LOGI(TAG, "Starting OTA...");
+      if (OTA::start() != ESP_OK)
+        httpSendResponse(nc, 500, "Firmware update init failed.");
+      break;
+    }
+
+    case MG_EV_HTTP_PART_DATA:
+    {
+      struct mg_http_multipart_part* multipart = (struct mg_http_multipart_part*) ev_data;
+      if (OTA::write((uint8_t*) multipart->data.p, multipart->data.len) != ESP_OK)
+        httpSendResponse(nc, 500, "Firmware write failed.");
+      break;
+    }
+
+    case MG_EV_HTTP_PART_END:
+    {
+      ESP_LOGI(TAG, "Ending OTA...");
+      if (OTA::end() == ESP_OK)
+        httpSendResponse(nc, 200, "Firmware update succesful. Rebooting...");
+      else
+        httpSendResponse(nc, 500, "Firmware updated failed.");
+      break;
+    }
+  }
+}
+
+/**
   @brief  Main task function of the HTTP server
   
   @param  pvParameters
@@ -119,6 +167,9 @@ void httpTask(void * pvParameters)
 
   // Enable HTTP on the connection
   mg_set_protocol_http_websocket(connection);
+
+  // Special handler for OTA page
+  mg_register_http_endpoint(connection, "/ota", otaEventHandler);
 
   // Loop waiting for events
   while(1)
