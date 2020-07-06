@@ -11,7 +11,6 @@ namespace OTA
     STATE_ERROR,
   } STATE;
 
-  static esp_err_t cleanup(void);
   esp_err_t start(void);
   esp_err_t write(uint8_t* data, uint16_t length);
   esp_err_t end(void);

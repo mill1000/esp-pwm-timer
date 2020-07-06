@@ -24,7 +24,7 @@ static struct
   @param  none
   @retval esp_err_t
 */
-static esp_err_t OTA::cleanup()
+static esp_err_t cleanup()
 {
   // Remove timeout timer
   if (ota.timeoutTimer != NULL)
