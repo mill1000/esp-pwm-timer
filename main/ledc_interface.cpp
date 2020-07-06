@@ -97,7 +97,7 @@ void LEDC::configure_channel(const channel_config_t& config)
     ESP_LOGI(TAG, "Channel %d: disabled", config.id);
     ledc_stop(LED_MODE, config.id, 0);
 
-    if (config.gpio == GPIO_NUM_NC || config.gpio >= GPIO_NUM_MAX)
+    if (config.gpio != GPIO_NUM_NC && config.gpio < GPIO_NUM_MAX)
       gpio_reset_pin(config.gpio);
 
     return;
