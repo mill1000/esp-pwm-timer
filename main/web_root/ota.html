@@ -107,7 +107,7 @@ function startUpdate() {
   progress.classList = "working";
 
   xhr.open("POST", window.location.href + "/ota");
-  xhr.timeout = 10000;
+  xhr.timeout = 30000;
   xhr.send(formData);
 }
 </script>
