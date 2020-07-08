@@ -17,6 +17,7 @@
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-colorschemes@0.4.0/dist/chartjs-plugin-colorschemes.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/mill1000/chartjs-plugin-annotation@v0.5.8/chartjs-plugin-annotation.min.js"></script>
 
 <!-- Local stylesheet for customizing modal -->
 <link rel="stylesheet" href="modal.css">
@@ -310,10 +311,29 @@ var chart = new Chart(context, {
     plugins: {
       colorschemes: {
         scheme: "brewer.Accent8"
-      }
+      },
+      annotation: {
+        events: ['mouseover'],
+      annotations: [{
+        type: 'line',
+        mode: 'vertical',
+        scaleID: 'x-axis-0',
+        value: moment().format("HH:mm"),
+        borderWidth: 4, 
+        borderColor: "lightgrey",
+        
+        onMouseover: () => console.log("Click"),
+  
+      }]
+    },
     }
   }
 });
+
+window.setInterval(() => {
+  chart.options.plugins.annotation.annotations[0].value = moment().format("HH:mm");
+  chart.update();
+}, 1000)
 </script>
 </body>
 </html>
