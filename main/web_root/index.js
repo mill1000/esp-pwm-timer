@@ -144,15 +144,26 @@ var Schedule = {
 
   get datasets() {
     // Construct a dataset for each enabled channel
-    let datasets = Channels.enabled.map(c => ({label: c.name, data:[]}));
+    let datasets = Channels.enabled.map(c => ({ label: c.name, data: [] }));
+
+    // Object to store the last set values for each ID
+    let lastValues = {};
 
     this.data.forEach(row => {
       let ids = Object.keys(row).filter(x => x !== "tod");
       ids.forEach(id => {
-        if (!nullOrEmpty(row[id]))
-          datasets[id].data.push({x: row.tod, y:row[id]});
+        if (!nullOrEmpty(row[id])) {
+          datasets[id].data.push({ x: row.tod, y: row[id] });
+          lastValues[id] = row[id];
+        }
       })
     });
+
+    // Add points representing the wrap around behaviour
+    for (const [id, value] of Object.entries(lastValues)) {
+      datasets[id].data.push({ x: "24:00", y: value });
+      datasets[id].data.unshift({ x: "00:00", y: value });
+    }
 
     return datasets;
   },
