@@ -127,7 +127,7 @@ void LEDC::configure_channel(const channel_config_t& config)
   channel_config.hpoint     = 0;
   channel_config.timer_sel  = config.timer;
 
-  ESP_LOGI(TAG, "Channel %d: GPIO: %d Timer: %d Name: %s", config.id, config.gpio, config.timer, "");//config.name.c_str());
+  ESP_LOGI(TAG, "Channel %d: GPIO: %d Timer: %d", config.id, config.gpio, config.timer);
 
   ledc_channel_config(&channel_config);
 }
