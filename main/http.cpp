@@ -23,7 +23,7 @@ static void httpSendResponse(struct mg_connection* nc, uint16_t code, const char
 {
   mg_send_head(nc, code, strlen(error), "Content-Type: text/html");
   mg_printf(nc, error);
-  nc->flags |= MG_F_SEND_AND_CLOSE; 
+  nc->flags |= MG_F_SEND_AND_CLOSE;
 }
 
 /**
@@ -115,27 +115,80 @@ static void otaEventHandler(struct mg_connection* nc, int ev, void* ev_data)
 
     case MG_EV_HTTP_PART_BEGIN:
     {
-      ESP_LOGI(TAG, "Starting OTA...");
-      if (OTA::start() != ESP_OK)
+      struct mg_http_multipart_part* multipart = (struct mg_http_multipart_part*) ev_data;
+
+      //ESP_LOGI(TAG, "Filename %s, Varname %s", multipart->file_name, multipart->var_name);
+      if (multipart->user_data != nullptr)
+      {
+        ESP_LOGE(TAG, "Non-null OTA handle. OTA already in progress?");
         httpSendResponse(nc, 500, "Firmware update init failed.");
+        return;
+      }
+
+      // Construct an OTA object based on the incoming file "target"
+      std::string ota_target = std::string(multipart->var_name);
+      OTA::Handle* ota = OTA::construct_handle(ota_target);
+      if (ota == nullptr)
+      {
+        ESP_LOGE(TAG, "Failed to construct OTA handle for target '%s'.", ota_target.c_str());
+        httpSendResponse(nc, 500, "Firmware update init failed.");
+        return;
+      }
+
+      ESP_LOGI(TAG, "Starting %s OTA...", ota_target.c_str());
+      esp_err_t result = ota->start();
+      if (result != ESP_OK)
+      {
+        ESP_LOGE(TAG, "Failed to start OTA. Error: %s", esp_err_to_name(result));
+
+        // Inform the client this failed
+        httpSendResponse(nc, 500, "Firmware update init failed.");
+
+        // Kill the handle
+        delete ota;
+        multipart->user_data = nullptr;
+        return;
+      }
+
+      // Save the handle for reference in future calls
+      multipart->user_data = (void*) ota;
       break;
     }
 
     case MG_EV_HTTP_PART_DATA:
     {
       struct mg_http_multipart_part* multipart = (struct mg_http_multipart_part*) ev_data;
-      if (OTA::write((uint8_t*) multipart->data.p, multipart->data.len) != ESP_OK)
+
+      OTA::Handle* ota = (OTA::Handle*) multipart->user_data;
+
+      // Ignore if handle is null
+      if (ota == nullptr)
+        return;
+
+      if (ota->write((uint8_t*) multipart->data.p, multipart->data.len) != ESP_OK)
         httpSendResponse(nc, 500, "Firmware write failed.");
       break;
     }
 
     case MG_EV_HTTP_PART_END:
     {
+      struct mg_http_multipart_part* multipart = (struct mg_http_multipart_part*) ev_data;
+      
+      OTA::Handle* ota = (OTA::Handle*) multipart->user_data;
+
+      // Ignore if handle is null
+      if (ota == nullptr)
+        return;
+
       ESP_LOGI(TAG, "Ending OTA...");
-      if (OTA::end() == ESP_OK)
+      if (ota->end() == ESP_OK)
         httpSendResponse(nc, 200, "Firmware update succesful. Rebooting...");
       else
         httpSendResponse(nc, 500, "Firmware updated failed.");
+
+      // Free the handle object and reference
+      delete ota;
+      multipart->user_data = nullptr;
       break;
     }
   }

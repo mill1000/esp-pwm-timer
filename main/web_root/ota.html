@@ -2,7 +2,8 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>OTA Firmware Update</title>
+<title>Firmware Update</title>
+<script src="https://cdn.jsdelivr.net/npm/js-untar@2.0.0/build/dist/untar.js"></script>
 <style>
   html {font-family: sans-serif;}
   body {margin-left: 20vw; margin-right: 20vw;}
@@ -52,7 +53,7 @@
   <div id="progress"></div>
 </div>
 <form action="javascript:void(0);" onsubmit="startUpdate()">
-  <input type="file" id="file" accept=".bin" >
+  <input type="file" id="file" accept=".tar" >
   <input type="submit" value="Start Update">
 </form>
 
@@ -65,14 +66,7 @@ var Status = {
   },
 }
 
-function startUpdate() {
-  let file = document.getElementById("file").files[0];
-
-  if (!file) {
-    Status.set("No file selected.");
-    return;
-  }
-
+function uploadFiles(firmware, spiffs) {
   let progress = document.getElementById("progress");
 
   let xhr = new XMLHttpRequest();
@@ -100,15 +94,44 @@ function startUpdate() {
     }
   };
 
-  var formData = new FormData();
-  formData.append("firmware", file);
+  let formData = new FormData();
+
+  if (spiffs)
+    formData.append("spiffs", spiffs);
+
+  if (firmware)
+    formData.append("firmware", firmware);
 
   Status.set("Upload in progress...");
   progress.classList = "working";
 
-  xhr.open("POST", window.location.href + "/ota");
-  xhr.timeout = 30000;
+  xhr.open("POST", window.location.href);
+  //xhr.timeout = 30000;
   xhr.send(formData);
+}
+
+function startUpdate() {
+  let tar = document.getElementById("file").files[0];
+
+  if (!tar) {
+    Status.set("No file selected.");
+    return;
+  }
+
+  tar.arrayBuffer().then((buffer)=> {
+    untar(buffer).then((files) => {
+
+      // Attempt to fetch blobs of each file type
+      let spiffs_file = files.find(f => f.name === "spiffs.bin") || {};
+      let spiffs_data = spiffs_file.blob;
+
+      let firmware_file = files.find(f => f.name === "esp-led-control.bin") || {};
+      let firmware_data = firmware_file.blob;
+
+      uploadFiles(firmware_data, spiffs_data);
+    });
+  });
+  
 }
 </script>
 </body>
