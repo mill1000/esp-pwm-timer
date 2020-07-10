@@ -111,27 +111,50 @@ function uploadFiles(firmware, spiffs) {
 }
 
 function startUpdate() {
-  let tar = document.getElementById("file").files[0];
+  let file = document.getElementById("file").files[0];
 
-  if (!tar) {
+  if (!file) {
     Status.set("No file selected.");
     return;
   }
 
-  tar.arrayBuffer().then((buffer)=> {
-    untar(buffer).then((files) => {
+  let name = file.name.split('.').shift();
+  let ext = file.name.split('.').pop();
+  switch (ext) {
+    case "tar":
+      {
+        file.arrayBuffer().then((buffer) => {
+          untar(buffer).then((files) => {
 
-      // Attempt to fetch blobs of each file type
-      let spiffs_file = files.find(f => f.name === "spiffs.bin") || {};
-      let spiffs_data = spiffs_file.blob;
+            // Attempt to fetch blobs of each file type
+            let spiffs_file = files.find(f => f.name === "spiffs.bin") || {};
+            let spiffs_data = spiffs_file.blob;
 
-      let firmware_file = files.find(f => f.name === "esp-led-control.bin") || {};
-      let firmware_data = firmware_file.blob;
+            let firmware_file = files.find(f => f.name === "esp-led-control.bin") || {};
+            let firmware_data = firmware_file.blob;
 
-      uploadFiles(firmware_data, spiffs_data);
-    });
-  });
-  
+            uploadFiles(firmware_data, spiffs_data);
+          });
+        });
+        break;
+      }
+
+    case "bin":
+      {
+        if (name === "firmware" || name === "esp-led-control")
+          uploadFiles(file, null);
+        else if (name === "spiffs")
+          uploadFiles(null, file);
+        else
+          Status.set("Unrecognized binary file.");
+
+        break;
+      }
+
+    default:
+      Status.set("Unrecognized file extension.");
+      break;
+  }
 }
 </script>
 </body>
