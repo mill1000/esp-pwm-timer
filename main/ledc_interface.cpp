@@ -49,7 +49,7 @@ void LEDC::reconfigure()
   {
     timer_config_t timer = NVS::get_timer_config(i);
 
-  // Only configure if changed
+    // Only configure if changed
     if (timer != active_configs.timer[i])
       configure_timer(timer);
 
