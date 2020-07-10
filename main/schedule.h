@@ -13,6 +13,13 @@ typedef struct timer_config_t
 {
   ledc_timer_t id;
   int32_t frequency_Hz;
+
+  bool operator==(const timer_config_t& other) const 
+  {
+    return (id == other.id) && (frequency_Hz == other.frequency_Hz);
+  }
+
+  bool operator!=(const timer_config_t& other) const { return !(*this == other); }
 } timer_config_t;
 
 typedef struct channel_config_t
@@ -21,6 +28,13 @@ typedef struct channel_config_t
   ledc_timer_t timer;
   gpio_num_t gpio;
   bool enabled;
+
+  bool operator==(const channel_config_t& other) const 
+  {
+    return (id == other.id) && (timer == other.timer) && (gpio == other.gpio) && (enabled == other.enabled);
+  }
+
+  bool operator!=(const channel_config_t& other) const { return !(*this == other); }
 } channel_config_t;
 
 class Schedule

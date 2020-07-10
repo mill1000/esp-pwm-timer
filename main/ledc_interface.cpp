@@ -13,6 +13,12 @@
 
 #define TAG "LED"
 
+static struct
+{
+  timer_config_t timer[LEDC_TIMER_MAX];
+  channel_config_t channel[LEDC_CHANNEL_MAX];
+} active_configs;
+
 /**
   @brief  Initalize the LEDC peripheral and enable fade function
   
@@ -23,6 +29,9 @@ void LEDC::init()
 {
   // Enable fade function
   ledc_fade_func_install(0);
+
+  // Reset active configs
+  memset(&active_configs, 0, sizeof(active_configs));
 
   reconfigure();
 }
@@ -39,14 +48,24 @@ void LEDC::reconfigure()
   for (uint8_t i = 0; i < LEDC_TIMER_MAX; i++)
   {
     timer_config_t timer = NVS::get_timer_config(i);
-    configure_timer(timer);
+
+  // Only configure if changed
+    if (timer != active_configs.timer[i])
+      configure_timer(timer);
+
+    active_configs.timer[i] = timer;
   }
 
   for (uint8_t i = 0; i < LEDC_CHANNEL_MAX; i++)
   {
     // Configure all channels
     channel_config_t channel = NVS::get_channel_config(i).second;
-    configure_channel(channel);
+
+    // Only configure if changed
+    if (channel != active_configs.channel[i])
+      configure_channel(channel);
+
+    active_configs.channel[i] = channel;
   }
 }
 
