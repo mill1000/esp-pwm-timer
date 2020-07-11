@@ -65,7 +65,7 @@ bool JSON::parse_settings(const std::string& jString)
       config.enabled = channel["enabled"].get<bool>();
       config.timer = JSON::get_or_default<ledc_timer_t>(channel, "timer", LEDC_TIMER_MAX);
       config.gpio = JSON::get_or_default<gpio_num_t>(channel, "gpio", GPIO_NUM_NC);
-      std::string name = channel["name"].get<std::string>();
+      std::string name = JSON::get_or_default<std::string>(channel, "name");
 
       NVS::save_channel_config(name, config);
     }

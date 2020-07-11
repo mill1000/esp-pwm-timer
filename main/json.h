@@ -8,7 +8,7 @@
 
 namespace JSON
 {
-  template <typename T> T get_or_default(const nlohmann::json& json, const std::string& key, const T& default_value)
+  template <typename T> T get_or_default(const nlohmann::json& json, const std::string& key, const T& default_value = T())
   {
     // If key is not null fetch value otherwise use default
     // Need because this lib is fucking dumb: https://github.com/nlohmann/json/issues/1163
