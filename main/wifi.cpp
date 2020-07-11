@@ -1,10 +1,12 @@
-#include <cstring>
-
 #include "esp_wifi.h"
 #include "esp_err.h"
 #include "esp_log.h"
 
+#include <cstring>
+#include <string>
+
 #include "wifi.h"
+#include "nvs_interface.h"
 
 #define TAG "WiFi"
 
@@ -27,8 +29,19 @@ static void wifiEventHandler(void* arg, esp_event_base_t event_base, int32_t eve
   switch (event_id)
   {
     case WIFI_EVENT_STA_START:
+    {
+      // Set hostname before connection
+      std::string hostname = NVS::get_hostname();
+      if (!hostname.empty())
+      {
+        ESP_LOGI(TAG, "Setting hostname to '%s'.", hostname.c_str());
+        tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, hostname.c_str());
+      }
+
       esp_wifi_connect();
       break;
+    }
+     
 
     case WIFI_EVENT_STA_CONNECTED:
       ESP_LOGI(TAG, "Connected.");
