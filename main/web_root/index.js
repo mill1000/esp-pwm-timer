@@ -152,7 +152,7 @@ var Schedule = {
     this.data.forEach(row => {
       let ids = Object.keys(row).filter(x => x !== "tod");
       ids.forEach(id => {
-        if (!nullOrEmpty(row[id])) {
+        if (!nullOrEmpty(row[id]) && datasets[id]) {
           datasets[id].data.push({ x: row.tod, y: row[id] });
           lastValues[id] = row[id];
         }
