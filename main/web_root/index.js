@@ -210,11 +210,11 @@ var Status = {
   },
 
   set_success: function (message) {
-    this.set(message);
+    this.set("&check; " + message);
   },
 
   set_error: function (message) {
-    this.set("Save failed: " + message);
+    this.set("&#x26A0; " + message);
   },
 }
 
