@@ -232,7 +232,7 @@ function sendJsonXhrRequest(json, callback) {
     }
   };
 
-  xhr.open("POST", window.location.href + "/?action=set");
+  xhr.open("POST", window.location.host + "/?action=set");
   xhr.timeout = 5000;
   xhr.setRequestHeader("Content-Type", "application/json");
   xhr.send(json);
@@ -254,7 +254,7 @@ function getJsonXhrRequest() {
       }
     };
 
-    xhr.open("GET", window.location.href + "/?action=get");
+    xhr.open("GET", window.location.host + "/?action=get");
     xhr.timeout = 5000;
     xhr.send();
   });
