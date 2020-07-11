@@ -150,6 +150,10 @@ var Schedule = {
     let lastValues = {};
 
     this.data.forEach(row => {
+      // Ignore row if no TOD assigned
+      if (nullOrEmpty(row.tod))
+        return;
+
       let ids = Object.keys(row).filter(x => x !== "tod");
       ids.forEach(id => {
         if (!nullOrEmpty(row[id]) && datasets[id]) {
