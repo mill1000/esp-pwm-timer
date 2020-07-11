@@ -15,6 +15,15 @@ namespace JSON
     return json[key].is_null() ? default_value : json[key].get<T>();
   }
 
+  template <typename T, class UnaryPredicate> 
+  void set_if_valid(nlohmann::json& json, const std::string& key, const T& value, UnaryPredicate validator)
+  {
+    if (validator(value))
+      json[key] = value;
+    else
+      json[key] = nullptr;
+  }
+
   bool parse_settings(const std::string& jString);
   std::string get_settings(void);
 

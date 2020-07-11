@@ -92,6 +92,14 @@ bool JSON::parse_settings(const std::string& jString)
     signal_event(MAIN_EVENT_SCHEDULE_UPDATE);
   }
 
+  if (root.contains("system"))
+  {
+    nlohmann::json system = root.at("system");
+    
+    std::string hostname = system["hostname"].get<std::string>();
+    NVS::save_hostname(hostname);
+  }
+
   return true;
 }
 
@@ -134,20 +142,20 @@ Schedule::entry_t JSON::parse_schedule_entry(const std::string& jEntry)
   @retval std::string
 */
 std::string JSON::get_settings()
-{ 
+{
+  // Create & populate timer configuration object
   nlohmann::json timers = nlohmann::json::object();
   for (uint8_t i = 0; i < LEDC_TIMER_MAX; i++)
   {
     timer_config_t config = NVS::get_timer_config(i);
     
     // This fucking JSON lib
-    timers[std::to_string(i)] = 
-    {
-      {"id", config.id},
-      {"freq", config.frequency_Hz},
-    };
+    nlohmann::json& timer = timers[std::to_string(i)];
+    timer["id"] = config.id;
+    timer["freq"] = config.frequency_Hz;
   }
 
+  // Create & populate channel object
   nlohmann::json channels = nlohmann::json::object();
   for (uint8_t i = 0; i < LEDC_CHANNEL_MAX; i++)
   {
@@ -157,32 +165,32 @@ std::string JSON::get_settings()
     channel_config_t config = data.second;
     
     nlohmann::json& channel = channels[std::to_string(i)];
-    channel = 
-    {
-      {"id", config.id},
-      {"enabled", config.enabled},
-      {"timer", config.timer},
-      {"name", name}
-    };
-
-    // Special handling for GPIO
-    if (config.gpio != GPIO_NUM_NC)
-      channel["gpio"] = config.gpio;
-    else
-      channel["gpio"] = nullptr;
-      
+    channel["id"] = config.id;
+    channel["enabled"] = config.enabled;
+    channel["timer"] = config.timer;
+    
+    // Special handling for GPIO and name
+    JSON::set_if_valid<gpio_num_t>(channel, "gpio", config.gpio, [](gpio_num_t g) { return g != GPIO_NUM_NC; });
+    JSON::set_if_valid<std::string>(channel, "name", name, [](const std::string& s) { return !s.empty(); });
   }
 
+  // Create & populate schedule object
   nlohmann::json schedule = nlohmann::json::object();
 
   std::map<std::string, std::string> scheduleJson = NVS::get_schedule_json();
   for (auto& kv : scheduleJson)
     schedule[kv.first] = nlohmann::json::parse(kv.second);
 
+  // Create & populate system object
+  nlohmann::json system = nlohmann::json::object();
+  JSON::set_if_valid<std::string>(system, "hostname", NVS::get_hostname(), [](const std::string& s) { return !s.empty(); });
+
+  // Add all the objects to our root
   nlohmann::json root;
   root["timers"] = timers;
   root["channels"] = channels;
   root["schedule"] = schedule;
+  root["system"] = system;
 
   return root.dump();
 }
