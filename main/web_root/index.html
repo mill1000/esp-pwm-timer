@@ -21,34 +21,175 @@
 <!-- Local stylesheet for customizing modal -->
 <link rel="stylesheet" href="modal.css">
 <style>
-  html {font-family: sans-serif;}
-  body {margin-left: 5vw; margin-right: 5vw;}
+  html {font-family: sans-serif; scroll-behavior: smooth;}
+  body {margin: .5rem 0;}
+  h1, h2, h3, h4 { font-weight: 500; margin-top: 0;}
+
+  .container {margin: 1rem 0;}
+  .space_evenly {display: flex; justify-content: space-evenly;}
+  .flex_end {display: flex; justify-content: flex-end; }
+  .chart {position: relative; height: 33vh;}
+
   .tabulator-col-title {text-align: center;}
-  .container {display: flex; width:auto; justify-content: space-evenly;}
   #timerTable {width:40%; margin-right:5%}
   #channelTable {width:60%}
   #scheduleTable {width: 100%;}
-  .chart-container {position: relative; margin: auto; height: 25vh; width: 90vw;}
+  
+  .page {
+    margin-left: 15vw;
+    margin-right: 5vw; 
+    min-height:calc(100vh - 1rem);
+    margin-bottom: 1rem;
+  }
+
+  #sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+
+  height: 100%;
+  width: 10vw;
+  
+  background-color: lightgrey;
+  overflow-x: hidden;
+  }
+
+  #sidebar a {
+    display: block;
+    padding: .5rem 1rem;
+    text-decoration: none;
+    color: black;
+    transition-duration: 0.2s;
+  }
+
+  #sidebar a:hover:not(.active) {
+    background-color:dimgray;
+    color: white;
+  }
+
+  #footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+
+    width: calc(100% - 20vw);
+    height: 5vh;
+    margin-left: 10vw;
+    padding-left: 5vw;
+    padding-right: 5vw;
+
+    background-color: lightgrey;
+    z-index: 1;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+  }
+
+  #status {
+    flex-grow: 1;
+  }
+
+  button {
+    border: none;
+    color: white;
+    background-color:dimgray;
+    transition-duration: 0.2s;
+    cursor:pointer;
+  }
+
+  #footer button {
+    padding: .5rem 1.5rem;
+    margin-left: 1rem;
+    font-size: 1rem;
+  }
+
+  button.good:hover {
+    background-color: mediumseagreen;
+  }
+
+  button.danger:hover {
+    background-color: lightcoral;
+  }
+
+  button:hover {
+    background-color: lightsteelblue;
+  }
+
+  .page button {
+    padding: .5rem .5rem;
+  }
+
+  .page form {
+    margin-left: 15%;
+    margin-right: 15%;
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    grid-row-gap: .75rem;
+    align-items: center; 
+  }
+
+  .page form > label {
+    grid-column: 1 / 2;
+  }
+
+  .page form > input {
+    grid-column: 2 / 3;
+  }
 </style>
 </head>
 
 <body>
-<div class="container">
-<div id="timerTable"></div><div id="channelTable"></div>
+<div id="sidebar">
+  <a href="#schedule">Schedule</a>
+  <a href="#configure">Channel Setup</a>
+  <a href="#system">System Settings</a>
 </div>
 
-<div>
-<button onclick="scheduleTable.addRow()">Add Time</button>
-<button onclick="save()">Save</button>
-<span id="status"></span>
+<div id="footer">
+  <span id="status"></span>
+  <button class="danger" onclick="load()">Reset</button>
+  <button class="good" onclick="save()">Save</button>
 </div>
 
-<div class="container">
-<div id="scheduleTable"></div>
+<div class="page">
+  <a id="schedule"><h2>Schedule</h2></a>
+
+  <div class="container chart">
+    <canvas id="scheduleChart"></canvas>
+  </div>
+
+  <div class="container flex_end">
+  <button onclick="scheduleTable.addRow()">Add Time</button>
+  </div>
+
+  <div class="container">
+    <div id="scheduleTable"></div>
+  </div>
 </div>
 
-<div class="chart-container">
-<canvas id="scheduleChart"></canvas>
+<div class="page">
+  <a id="configure"><h2>Channel Setup</h2></a>
+
+  <div class="container space_evenly">
+    <div id="timerTable"></div>
+    <div id="channelTable"></div>
+  </div>
+</div>
+
+<div class="page">
+  <a id="system"><h2>System Settings</h2></a>
+  <form class="container">
+    <label for="hostname">Hostname</label>
+    <input type="text" id="hostname"/>
+
+    <label for="timezone">Timezone</label>
+    <input type="text" id="timezone"/>
+    
+    <label for="ntp_server_1">NTP Server 1</label>
+    <input type="text" id="ntp_server_1"/>
+    <label for="ntp_server_2">NTP Server 2</label>
+    <input type="text" id="ntp_server_2"/>
+  </form>
 </div>
 
 <div id="modal" class="tingle-modal modal-content">
@@ -206,7 +347,6 @@ var columnTemplate = [
 ];
 
 var scheduleTable = new Tabulator("#scheduleTable", {
-  height:"35vh",
   headerSort: false,
   // reactiveData doesn't appear to work if columns are variable
   //reactiveData: true,

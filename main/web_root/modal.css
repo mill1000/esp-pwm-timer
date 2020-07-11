@@ -20,6 +20,12 @@
   background: rgba(0, 0, 0, .55);
 }
 
+.tingle-enabled {
+  /* disable removal of scrollbars */
+  position: static;
+  overflow: auto;
+}
+
 @keyframes scale {
   0% {
     opacity: 0;
