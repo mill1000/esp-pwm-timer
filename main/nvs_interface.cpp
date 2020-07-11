@@ -76,6 +76,9 @@ void NVS::reset_configuration()
  
   for (uint8_t i = 0; i < LEDC_CHANNEL_MAX; i++)
     save_channel_config("", (channel_config_t){.id = (ledc_channel_t)i, .timer = LEDC_TIMER_0, .gpio = GPIO_NUM_NC, .enabled = false});
+  
+  // Save default hostname
+  save_hostname(CONFIG_LWIP_LOCAL_HOSTNAME);
 
   // Save the version too
   parameters.nvs_set<uint8_t>("version", NVS_VERSION);
@@ -213,4 +216,31 @@ std::map<std::string, std::string> NVS::get_schedule_json()
   }
 
   return scheduleJson;
+}
+
+/**
+  @brief  Save device hostname to NVS
+  
+  @param  hostname Hostname of device
+  @retval none
+*/
+void NVS::save_hostname(const std::string& hostname)
+{
+  parameters.nvs_set<std::string>("hostname", hostname);
+
+  parameters.commit();
+}
+
+/**
+  @brief  Fetch device hostname from NVS
+  
+  @param  none
+  @retval std::string
+*/
+std::string NVS::get_hostname()
+{
+  std::string hostname = "";
+  parameters.nvs_get<std::string>("hostname", hostname);
+  
+  return hostname;
 }

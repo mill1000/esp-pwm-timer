@@ -24,6 +24,9 @@ namespace NVS
   void commit_schedule(void);
   void save_schedule_entry_json(const std::string& tod, const std::string& json);
   std::map<std::string, std::string> get_schedule_json(void);
+
+  void save_hostname(const std::string& hostname);
+  std::string get_hostname(void);
 }
 
 #endif
