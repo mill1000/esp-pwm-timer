@@ -84,6 +84,10 @@ void NVS::check_required_configuration()
   
   if (get_ntp_server(1).empty())
     save_ntp_server(1, CONFIG_NTP_SERVER_2);
+
+  // Ensure timezone is set
+  if (get_timezone().empty())
+    save_timezone(CONFIG_LOCAL_TIMEZONE);
 }
 
 /**
@@ -108,6 +112,9 @@ void NVS::reset_configuration()
   // Set default NTP servers
   save_ntp_server(0, CONFIG_NTP_SERVER_1);
   save_ntp_server(1, CONFIG_NTP_SERVER_2);
+
+  // Save default timezone
+  save_timezone(CONFIG_LOCAL_TIMEZONE);
 
   // Save the version too
   parameters.nvs_set<uint8_t>("version", NVS_VERSION);

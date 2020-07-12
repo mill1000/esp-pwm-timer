@@ -23,4 +23,10 @@ menu "Project Configuration"
         default "1.pool.ntp.org"
         help
             Second NTP server to use.
+
+    config LOCAL_TIMEZONE
+        string "Local timezone"
+        default "MST7MDT,M3.2.0,M11.1.0"
+        help
+            Local timezone in POSIX format.
 endmenu
