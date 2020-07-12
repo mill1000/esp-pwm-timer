@@ -293,6 +293,14 @@ function save() {
   settings.channels = Channels.dictionary;
   settings.schedule = Schedule.dictionary;
 
+  settings.system = {
+    hostname: document.getElementById("hostname").value,
+    ntp_servers: [
+      document.getElementById("ntp_server_1").value,
+      document.getElementById("ntp_server_2").value,
+    ],
+  }
+
   console.log("Timers:" + JSON.stringify(settings.timers));
   console.log("Channels:" + JSON.stringify(settings.channels));
   console.log("Schedule:" + JSON.stringify(settings.schedule));
@@ -323,6 +331,10 @@ function load() {
     scheduleTable.setColumns(columnTemplate.concat(Channels.columns));
 
     scheduleTable.replaceData(Schedule.from_dictionary(settings.schedule));
+
+    document.getElementById("hostname").value = settings.system.hostname;
+    document.getElementById("ntp_server_1").value = settings.system.ntp_servers[0];
+    document.getElementById("ntp_server_2").value = settings.system.ntp_servers[1];
 
     Status.set_success("Settings loaded.");
   });
