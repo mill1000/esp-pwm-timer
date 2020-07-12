@@ -1,6 +1,10 @@
 #ifndef __NVS_INTERFACE_H__
 #define __NVS_INTERFACE_H__
 
+#include <vector>
+#include <string>
+#include <map>
+
 #include "schedule.h"
 
 namespace NVS
@@ -27,6 +31,9 @@ namespace NVS
 
   void save_hostname(const std::string& hostname);
   std::string get_hostname(void);
+
+  void save_ntp_servers(const std::vector<std::string>& servers);
+  std::vector<std::string> get_ntp_servers(void);
 }
 
 #endif

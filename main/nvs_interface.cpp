@@ -1,6 +1,9 @@
 #include "nvs_flash.h"
 #include "esp_log.h"
 
+#include <string>
+#include <vector>
+
 #include "nvs_interface.h"
 #include "nvs_parameters.h"
 
@@ -243,4 +246,49 @@ std::string NVS::get_hostname()
   parameters.nvs_get<std::string>("hostname", hostname);
   
   return hostname;
+}
+
+/**
+  @brief  Save NTP servers to NVS
+  
+  @param  servers Vector of server hostnames/addresses
+  @retval none
+*/
+void NVS::save_ntp_servers(const std::vector<std::string>& servers)
+{
+  if (servers.size() > CONFIG_LWIP_DHCP_MAX_NTP_SERVERS)
+    ESP_LOGW(TAG, "Discarded additional NTP servers. Storing first %d.", CONFIG_LWIP_DHCP_MAX_NTP_SERVERS);
+  
+  for (uint8_t i = 0; i < servers.size() && i < CONFIG_LWIP_DHCP_MAX_NTP_SERVERS; i++)
+  {
+    char key[16] = {0};
+    snprintf(key, 16, "ntp%d", i);
+
+    parameters.nvs_set<std::string>(key, servers[i]);
+  }
+
+  parameters.commit();
+}
+
+/**
+  @brief  Fetch NTP servers from NVS
+  
+  @param  none
+  @retval std::vector<std::string>
+*/
+std::vector<std::string> NVS::get_ntp_servers()
+{
+  std::vector<std::string> servers;
+
+  for (uint8_t i = 0; i < CONFIG_LWIP_DHCP_MAX_NTP_SERVERS; i++)
+  {
+    char key[16] = {0};
+    snprintf(key, 16, "ntp%d", i);
+
+    std::string ntp;
+    if (parameters.nvs_get<std::string>(key, ntp) == ESP_OK)
+      servers.push_back(ntp);
+  }
+  
+  return servers;
 }
