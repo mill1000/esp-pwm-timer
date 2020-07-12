@@ -103,8 +103,13 @@ bool JSON::parse_settings(const std::string& jString)
 
     if (system.contains("ntp_servers"))
     {
-      std::vector<std::string> servers = system["ntp_servers"].get<std::vector<std::string>>();
-      NVS::save_ntp_servers(servers);
+      nlohmann::json ntp_servers = system.at("ntp_servers");
+
+      for (uint8_t i = 0; i < CONFIG_LWIP_DHCP_MAX_NTP_SERVERS; i++)
+      {
+        std::string server = JSON::get_or_default<std::string>(ntp_servers, i);
+        NVS::save_ntp_server(i, server);
+      }
     }
   }
 
@@ -194,7 +199,11 @@ std::string JSON::get_settings()
 
   JSON::set_if_valid<std::string>(system, "hostname", NVS::get_hostname(), [](const std::string& s) { return !s.empty(); });
 
-  system["ntp_servers"] = nlohmann::json(NVS::get_ntp_servers());
+  system["ntp_servers"] = 
+  {
+    NVS::get_ntp_server(0),
+    NVS::get_ntp_server(1),
+  };
 
   // Add all the objects to our root
   nlohmann::json root;

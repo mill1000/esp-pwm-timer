@@ -32,8 +32,8 @@ namespace NVS
   void save_hostname(const std::string& hostname);
   std::string get_hostname(void);
 
-  void save_ntp_servers(const std::vector<std::string>& servers);
-  std::vector<std::string> get_ntp_servers(void);
+  void save_ntp_server(uint8_t index, const std::string& server);
+  std::string get_ntp_server(uint8_t index);
 }
 
 #endif
