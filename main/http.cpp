@@ -104,12 +104,22 @@ static void httpEventHandler(struct mg_connection* nc, int ev, void* ev_data)
 */
 static void otaEventHandler(struct mg_connection* nc, int ev, void* ev_data)
 {
+  constexpr uint32_t OTA_FAILED_FLAG = MG_F_USER_1;
+  static std::string response;
+
   switch(ev)
   {
     case MG_EV_HTTP_REQUEST:
     {
       // Serve the page from the SPIFFS
       mg_http_serve_file(nc, (struct http_message *) ev_data, "/spiffs/ota.html", mg_mk_str("text/html"), mg_mk_str(""));
+      break;
+    }
+
+    case MG_EV_HTTP_MULTIPART_REQUEST:
+    {
+      // Reset response string
+      response.clear();
       break;
     }
 
@@ -121,7 +131,10 @@ static void otaEventHandler(struct mg_connection* nc, int ev, void* ev_data)
       if (multipart->user_data != nullptr)
       {
         ESP_LOGE(TAG, "Non-null OTA handle. OTA already in progress?");
-        httpSendResponse(nc, 500, "Firmware update init failed.");
+
+        // Mark OTA as failed and append reason
+        response += "OTA update already in progress.";
+        nc->flags |= OTA_FAILED_FLAG;
         return;
       }
 
@@ -131,7 +144,10 @@ static void otaEventHandler(struct mg_connection* nc, int ev, void* ev_data)
       if (ota == nullptr)
       {
         ESP_LOGE(TAG, "Failed to construct OTA handle for target '%s'.", ota_target.c_str());
-        httpSendResponse(nc, 500, "Firmware update init failed.");
+
+        // Mark OTA as failed and append reason
+        response += "OTA update init failed.";
+        nc->flags |= OTA_FAILED_FLAG;
         return;
       }
 
@@ -141,8 +157,9 @@ static void otaEventHandler(struct mg_connection* nc, int ev, void* ev_data)
       {
         ESP_LOGE(TAG, "Failed to start OTA. Error: %s", esp_err_to_name(result));
 
-        // Inform the client this failed
-        httpSendResponse(nc, 500, "Firmware update init failed.");
+        // Mark OTA as failed and append reason
+        response += "OTA update init failed.";
+        nc->flags |= OTA_FAILED_FLAG;
 
         // Kill the handle
         delete ota;
@@ -159,14 +176,21 @@ static void otaEventHandler(struct mg_connection* nc, int ev, void* ev_data)
     {
       struct mg_http_multipart_part* multipart = (struct mg_http_multipart_part*) ev_data;
 
-      OTA::Handle* ota = (OTA::Handle*) multipart->user_data;
+      // Something went wrong so ignore the data
+      if (nc->flags & OTA_FAILED_FLAG)
+        return;
 
-      // Ignore if handle is null
+      // Fetch handle from user_data
+      OTA::Handle* ota = (OTA::Handle*) multipart->user_data;
       if (ota == nullptr)
         return;
 
       if (ota->write((uint8_t*) multipart->data.p, multipart->data.len) != ESP_OK)
-        httpSendResponse(nc, 500, "Firmware write failed.");
+      {
+        // Mark OTA as failed and append reason
+        response += "OTA write failed.";
+        nc->flags |= OTA_FAILED_FLAG;
+      }
       break;
     }
 
@@ -174,21 +198,35 @@ static void otaEventHandler(struct mg_connection* nc, int ev, void* ev_data)
     {
       struct mg_http_multipart_part* multipart = (struct mg_http_multipart_part*) ev_data;
       
+      // Fetch handle from user_data
       OTA::Handle* ota = (OTA::Handle*) multipart->user_data;
-
-      // Ignore if handle is null
       if (ota == nullptr)
         return;
 
+      // Even if OTA_FAILED_FLAG is set we should let the OTA try to clean up
+
       ESP_LOGI(TAG, "Ending OTA...");
-      if (ota->end() == ESP_OK)
-        httpSendResponse(nc, 200, "Firmware update succesful. Rebooting...");
-      else
-        httpSendResponse(nc, 500, "Firmware updated failed.");
+      if (ota->end() != ESP_OK)
+      {
+        response += "OTA end failed.";
+        nc->flags |= OTA_FAILED_FLAG;
+      }
 
       // Free the handle object and reference
       delete ota;
       multipart->user_data = nullptr;
+      break;
+    }
+
+    case MG_EV_HTTP_MULTIPART_REQUEST_END:
+    {
+      // Send the appropriate response status 
+      if (nc->flags & OTA_FAILED_FLAG)
+        httpSendResponse(nc, 500, response.c_str());
+      else
+        httpSendResponse(nc, 200, "OTA update successful.");
+      
+      response.clear();
       break;
     }
   }
