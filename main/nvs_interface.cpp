@@ -62,6 +62,28 @@ void NVS::init()
     ESP_LOGW(TAG, "Invalid NVS version in namespace '%s'. Erasing.", SCHEDULE_NAMESPACE);
     erase_schedule();
   }
+
+  check_required_configuration();
+}
+
+/**
+  @brief  Check rquired configuration items and reset if empty or not found
+  
+  @param  none
+  @retval none
+*/
+void NVS::check_required_configuration()
+{
+  // Ensure we have a hostname or use default configured
+  if (get_hostname().empty())
+    save_hostname(CONFIG_LWIP_LOCAL_HOSTNAME);
+
+  // Check and set NTP servers
+  if (get_ntp_server(0).empty())
+    save_ntp_server(0, CONFIG_NTP_SERVER_1);
+  
+  if (get_ntp_server(1).empty())
+    save_ntp_server(1, CONFIG_NTP_SERVER_2);
 }
 
 /**
