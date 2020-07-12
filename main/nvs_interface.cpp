@@ -1,6 +1,9 @@
 #include "nvs_flash.h"
 #include "esp_log.h"
 
+#include <string>
+#include <vector>
+
 #include "nvs_interface.h"
 #include "nvs_parameters.h"
 
@@ -59,6 +62,32 @@ void NVS::init()
     ESP_LOGW(TAG, "Invalid NVS version in namespace '%s'. Erasing.", SCHEDULE_NAMESPACE);
     erase_schedule();
   }
+
+  check_required_configuration();
+}
+
+/**
+  @brief  Check rquired configuration items and reset if empty or not found
+  
+  @param  none
+  @retval none
+*/
+void NVS::check_required_configuration()
+{
+  // Ensure we have a hostname or use default configured
+  if (get_hostname().empty())
+    save_hostname(CONFIG_LWIP_LOCAL_HOSTNAME);
+
+  // Check and set NTP servers
+  if (get_ntp_server(0).empty())
+    save_ntp_server(0, CONFIG_NTP_SERVER_1);
+  
+  if (get_ntp_server(1).empty())
+    save_ntp_server(1, CONFIG_NTP_SERVER_2);
+
+  // Ensure timezone is set
+  if (get_timezone().empty())
+    save_timezone(CONFIG_LOCAL_TIMEZONE);
 }
 
 /**
@@ -76,6 +105,16 @@ void NVS::reset_configuration()
  
   for (uint8_t i = 0; i < LEDC_CHANNEL_MAX; i++)
     save_channel_config("", (channel_config_t){.id = (ledc_channel_t)i, .timer = LEDC_TIMER_0, .gpio = GPIO_NUM_NC, .enabled = false});
+  
+  // Save default hostname
+  save_hostname(CONFIG_LWIP_LOCAL_HOSTNAME);
+
+  // Set default NTP servers
+  save_ntp_server(0, CONFIG_NTP_SERVER_1);
+  save_ntp_server(1, CONFIG_NTP_SERVER_2);
+
+  // Save default timezone
+  save_timezone(CONFIG_LOCAL_TIMEZONE);
 
   // Save the version too
   parameters.nvs_set<uint8_t>("version", NVS_VERSION);
@@ -213,4 +252,104 @@ std::map<std::string, std::string> NVS::get_schedule_json()
   }
 
   return scheduleJson;
+}
+
+/**
+  @brief  Save device hostname to NVS
+  
+  @param  hostname Hostname of device
+  @retval none
+*/
+void NVS::save_hostname(const std::string& hostname)
+{
+  parameters.nvs_set<std::string>("hostname", hostname);
+
+  parameters.commit();
+}
+
+/**
+  @brief  Fetch device hostname from NVS
+  
+  @param  none
+  @retval std::string
+*/
+std::string NVS::get_hostname()
+{
+  std::string hostname = "";
+  parameters.nvs_get<std::string>("hostname", hostname);
+  
+  return hostname;
+}
+
+/**
+  @brief  Save NTP server to NVS
+  
+  @param  index NTP server index. Must be less than CONFIG_LWIP_DHCP_MAX_NTP_SERVERS
+  @param  server NTP server hostname or address
+  @retval none
+*/
+void NVS::save_ntp_server(uint8_t index, const std::string& server)
+{
+  if (index >= CONFIG_LWIP_DHCP_MAX_NTP_SERVERS)
+  {
+    ESP_LOGW(TAG, "Invalid NTP server index.");
+    return;
+  }
+  
+  char key[16] = {0};
+  snprintf(key, 16, "ntp%d", index);
+
+  parameters.nvs_set<std::string>(key, server);
+
+  parameters.commit();
+}
+
+/**
+  @brief  Fetch NTP server from NVS
+  
+  @param  index NTP server index. Must be less than CONFIG_LWIP_DHCP_MAX_NTP_SERVERS
+  @retval std::string
+*/
+std::string NVS::get_ntp_server(uint8_t index)
+{
+  if (index >= CONFIG_LWIP_DHCP_MAX_NTP_SERVERS)
+  {
+    ESP_LOGW(TAG, "Invalid NTP server index.");
+    return std::string();
+  }
+
+  char key[16] = {0};
+  snprintf(key, 16, "ntp%d", index);
+
+  std::string server = "";
+  parameters.nvs_get<std::string>(key, server);
+  
+  return server;
+}
+
+/**
+  @brief  Save timezone to NVS
+  
+  @param  tz Timezone string
+  @retval none
+*/
+void NVS::save_timezone(const std::string& tz)
+{
+  parameters.nvs_set<std::string>("timezone", tz);
+
+  parameters.commit();
+}
+
+/**
+  @brief  Fetch timezone from NVS
+  
+  @param  none
+  @retval std::string
+*/
+std::string NVS::get_timezone()
+{
+  std::string tz = "";
+  parameters.nvs_get<std::string>("timezone", tz);
+  
+  return tz;
 }

@@ -13,6 +13,14 @@ Tabulator.prototype.moduleBindings.edit.prototype.clearEdited = function (cell) 
   }
 };
 
+String.prototype.format = function () {
+	a = this;
+	for (k in arguments) {
+		a = a.replace("{" + k + "}", arguments[k])
+	}
+	return a
+}
+
 function nullOrEmpty(id) {
   // We want 0 as a valid ID but want to exlude null, undef and empty
   return id == undefined || id == null || id === "";
@@ -28,7 +36,7 @@ class Timer {
   get valid() { return this.freq ? true : false; }
 
   get name() { 
-    return "Timer " + this.id;
+    return "Timer {0}".format(this.id);
   }
 
   set name(v) {
@@ -70,7 +78,7 @@ var Timers = {
 class Channel {
   constructor(opts = {}) {
     this.id = opts.id;
-    this.name = opts.name || "Channel " + opts.id;
+    this.name = opts.name || "Channel {0}".format(opts.id);
     this.timer = opts.timer || 0;
     this.gpio = opts.gpio || null;
     this.enabled = opts.enabled || false;
@@ -79,7 +87,7 @@ class Channel {
   get columnDefinition() {
     // Generate a Tabulator column def
     return {
-      title: "Channel " + this.id + "<br/>" + this.name,
+      title: "Channel {0}<br/>{1}".format(this.id, this.name),
       field: "" + this.id, // int -> string
       editor: "number", editorParams: { min: 0, max: 100, step: 10, mask: "999" },
       validator: "max:100",
@@ -186,7 +194,7 @@ function timeEditor(cell, onRendered, success, cancel, editorParams) {
   editor.setAttribute("type", "time");
 
   onRendered(function () {
-    // Attach a time picker tothe editor
+    // Attach a time picker to the editor
     let picker = flatpickr("#" + editor.id, {
       enableTime: true,
       noCalendar: true,
@@ -210,11 +218,14 @@ var Status = {
   },
 
   set_success: function (message) {
-    this.set(message);
+    this.set("&check; {0}".format(message));
   },
 
-  set_error: function (message) {
-    this.set("Save failed: " + message);
+  set_error: function (message, detail = null) {
+    let inner = "&#x26A0; {0}".format(message)
+    if (detail)
+      inner += "<br/><span class=\"subtext\">{0}</span>".format(detail)
+    this.set(inner);
   },
 }
 
@@ -222,7 +233,8 @@ function sendJsonXhrRequest(json, callback) {
   if (typeof josn != "string")
     json = JSON.stringify(json);
 
-  // Hack to keep empty strings from tabulator from crash json parser
+  // Hack to keep empty strings from tabulator crashing the json parser
+  // when it expects a number
   json = json.replace(/\:\"\"/gi, ":null");
 
   let xhr = new XMLHttpRequest();
@@ -232,7 +244,7 @@ function sendJsonXhrRequest(json, callback) {
     }
   };
 
-  xhr.open("POST", window.location.href + "/?action=set");
+  xhr.open("POST", window.location.host + "/?action=set");
   xhr.timeout = 5000;
   xhr.setRequestHeader("Content-Type", "application/json");
   xhr.send(json);
@@ -247,14 +259,13 @@ function getJsonXhrRequest() {
           resolve(JSON.parse(xhr.responseText));
         }
         else {
-          message = "Failed to load settings. Error: "
-          message += (xhr.status != 0) ? xhr.responseText : "Timeout";
+          let message = "Error: {0}".format((xhr.status != 0) ? xhr.responseText : "Timeout");
           reject(message);
         }
       }
     };
 
-    xhr.open("GET", window.location.href + "/?action=get");
+    xhr.open("GET", window.location.host + "/?action=get");
     xhr.timeout = 5000;
     xhr.send();
   });
@@ -268,19 +279,19 @@ function save() {
 
   if (timerTable.getInvalidCells().length)
   {
-    Status.set_error("Invalid timer setup. Please fix errors.");
+    Status.set_error("Invalid timer setup.");
     return;
   }
 
   if (channelTable.getInvalidCells().length)
   {
-    Status.set_error("Invalid channel setup. Please fix errors.");
+    Status.set_error("Invalid channel setup.");
     return;
   }
 
   if (scheduleTable.getInvalidCells().length)
   {
-    Status.set_error("Invalid schedule. Please fix errors.");
+    Status.set_error("Invalid schedule.");
     return;
   }
 
@@ -292,6 +303,15 @@ function save() {
   settings.channels = Channels.dictionary;
   settings.schedule = Schedule.dictionary;
 
+  settings.system = {
+    hostname: document.getElementById("hostname").value,
+    timezone: document.getElementById("timezone").value,
+    ntp_servers: [
+      document.getElementById("ntp_server_1").value,
+      document.getElementById("ntp_server_2").value,
+    ],
+  }
+
   console.log("Timers:" + JSON.stringify(settings.timers));
   console.log("Channels:" + JSON.stringify(settings.channels));
   console.log("Schedule:" + JSON.stringify(settings.schedule));
@@ -300,9 +320,8 @@ function save() {
     if (status == 200)
       Status.set_success("Complete.");
     else {
-      message = "Failed. Error: ";
-      message += (status != 0) ? xhr.responseText : "Timeout";
-      Status.set_error(message);
+      let message = "Error: {0}".format((status != 0) ? xhr.responseText : "Timeout");
+      Status.set_error("Save failed.", message);
     }
   }
 
@@ -313,7 +332,7 @@ function save() {
 function load() {
   Status.set("Loading settings...");
   getJsonXhrRequest().catch((message) => {
-    Status.set_error(message);
+    Status.set_error("Load failed.", message);
   }).then((settings) => {
     timerTable.setData(Timers.from_dictionary(settings.timers));
     channelTable.setData(Channels.from_dictionary(settings.channels));
@@ -322,6 +341,11 @@ function load() {
     scheduleTable.setColumns(columnTemplate.concat(Channels.columns));
 
     scheduleTable.replaceData(Schedule.from_dictionary(settings.schedule));
+
+    document.getElementById("hostname").value = settings.system.hostname;
+    document.getElementById("timezone").value = settings.system.timezone;
+    document.getElementById("ntp_server_1").value = settings.system.ntp_servers[0];
+    document.getElementById("ntp_server_2").value = settings.system.ntp_servers[1];
 
     Status.set_success("Settings loaded.");
   });
