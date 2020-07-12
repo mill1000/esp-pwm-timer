@@ -65,7 +65,7 @@ extern "C" void app_main()
   };
 
   // Configure NTP for MST/MDT
-  SNTP::init("MST7MDT,M3.2.0,M11.1.0", ntp_servers, [](){
+  SNTP::init(NVS::get_timezone(), ntp_servers, [](){
     signal_event(MAIN_EVENT_SYSTEM_TIME_UPDATED);
   });
 

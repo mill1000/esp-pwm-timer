@@ -27,6 +27,8 @@ void SNTP::init(const std::string& timezone, const server_list_t& servers, sync_
   setenv("TZ", timezone.c_str(), 1);
   tzset();
 
+  ESP_LOGI(TAG, "TZ: '%s'", timezone.c_str());
+
   // Add servers to the list
   uint8_t index = 0;
   for (auto& server : servers)
