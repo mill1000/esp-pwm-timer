@@ -9,6 +9,8 @@ typedef enum
   // Events fired when configs changed
   MAIN_EVENT_CONFIG_UPDATE    = 1 << 2,
   MAIN_EVENT_SCHEDULE_UPDATE  = 1 << 3,
+  // System events
+  MAIN_EVENT_REBOOT           = 1 << 4,
   MAIN_EVENT_ALL              = 0x00FFFFFF, // 24 bits max
 } MAIN_EVENT;
 

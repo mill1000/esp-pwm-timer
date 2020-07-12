@@ -167,6 +167,12 @@ extern "C" void app_main()
         LEDC::set_intensity((ledc_channel_t) pair.first, pair.second);
       }
     }
+
+    if (events & MAIN_EVENT_REBOOT)
+    {
+      ESP_LOGI(TAG, "Rebooting...");
+      esp_restart();
+    }
   }
 }
 
