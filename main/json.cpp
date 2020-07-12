@@ -29,7 +29,7 @@ bool JSON::parse_settings(const std::string& jString)
   {
     nlohmann::json timers = root.at("timers");
    
-    ESP_LOGI(TAG, "Timers: %s", timers.dump().c_str());
+    ESP_LOGD(TAG, "Timers: %s", timers.dump().c_str());
    
     for (auto& kv : timers.items())
     {
@@ -51,7 +51,7 @@ bool JSON::parse_settings(const std::string& jString)
   {
     nlohmann::json channels = root.at("channels");
     
-    ESP_LOGI(TAG, "Channels: %s", channels.dump().c_str());
+    ESP_LOGD(TAG, "Channels: %s", channels.dump().c_str());
 
     for (auto& kv : channels.items())
     {
@@ -80,7 +80,7 @@ bool JSON::parse_settings(const std::string& jString)
   {
     nlohmann::json schedule = root.at("schedule");
     
-    ESP_LOGI(TAG, "Schedule: %s", schedule.dump().c_str());
+    ESP_LOGD(TAG, "Schedule: %s", schedule.dump().c_str());
 
     NVS::erase_schedule();
 
