@@ -13,7 +13,7 @@
 
 .tingle-btn {
   padding: .5rem .75rem;
-  border-radius: 4px;
+  background-color: dimgray;
 }
 
 .tingle-modal {
