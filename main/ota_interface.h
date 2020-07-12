@@ -6,15 +6,24 @@
 #include "freertos/timers.h"
 
 #include <string>
+#include <functional>
 
 namespace OTA
 {
+  typedef std::function<void(void)> end_callback_t;
+  
+  struct end_result_t 
+  {
+    esp_err_t status;
+    end_callback_t callback;
+  };
+
   class Handle
   {
     public:
       virtual esp_err_t start(void) = 0;
       virtual esp_err_t write(uint8_t* data, uint16_t length) = 0;
-      virtual esp_err_t end(void) = 0;
+      virtual end_result_t end(void) = 0;
       virtual esp_err_t cleanup(void) = 0;
 
       virtual ~Handle () {}
@@ -27,7 +36,7 @@ namespace OTA
 
       esp_err_t start(void);
       esp_err_t write(uint8_t* data, uint16_t length);
-      esp_err_t end(void);
+      end_result_t end(void);
       esp_err_t cleanup(void);
 
     private:
@@ -42,7 +51,7 @@ namespace OTA
 
       esp_err_t start(void);
       esp_err_t write(uint8_t* data, uint16_t length);
-      esp_err_t end(void);
+      end_result_t end(void);
       esp_err_t cleanup(void);
 
     private:
