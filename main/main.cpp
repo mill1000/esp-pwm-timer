@@ -58,8 +58,14 @@ extern "C" void app_main()
   if (scheduleTimer == NULL)
     ESP_LOGE(TAG, "Failed to create schedule timer.");
 
+  // Construct server list
+  SNTP::server_list_t ntp_servers = {
+    NVS::get_ntp_server(0),
+    NVS::get_ntp_server(1),
+  };
+
   // Configure NTP for MST/MDT
-  SNTP::init("MST7MDT,M3.2.0,M11.1.0", [](){
+  SNTP::init("MST7MDT,M3.2.0,M11.1.0", ntp_servers, [](){
     signal_event(MAIN_EVENT_SYSTEM_TIME_UPDATED);
   });
 
