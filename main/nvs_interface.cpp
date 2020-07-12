@@ -83,6 +83,10 @@ void NVS::reset_configuration()
   // Save default hostname
   save_hostname(CONFIG_LWIP_LOCAL_HOSTNAME);
 
+  // Set default NTP servers
+  save_ntp_server(0, CONFIG_NTP_SERVER_1);
+  save_ntp_server(1, CONFIG_NTP_SERVER_2);
+
   // Save the version too
   parameters.nvs_set<uint8_t>("version", NVS_VERSION);
   parameters.commit();
