@@ -11,6 +11,7 @@ typedef enum
   MAIN_EVENT_SCHEDULE_UPDATE  = 1 << 3,
   // System events
   MAIN_EVENT_REBOOT           = 1 << 4,
+  MAIN_EVENT_REMOUNT_SPIFFS   = 1 << 5,
   MAIN_EVENT_ALL              = 0x00FFFFFF, // 24 bits max
 } MAIN_EVENT;
 

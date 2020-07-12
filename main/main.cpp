@@ -179,6 +179,12 @@ extern "C" void app_main()
       ESP_LOGI(TAG, "Rebooting...");
       esp_restart();
     }
+
+    if (events & MAIN_EVENT_REMOUNT_SPIFFS)
+    {
+      ESP_LOGI(TAG, "Remounting SPIFFS.");
+      SPIFFS::remount();
+    }
   }
 }
 

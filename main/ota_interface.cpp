@@ -319,7 +319,9 @@ OTA::end_result_t OTA::SpiffsHandle::end()
 {
   OTA::end_result_t result;
   result.status = cleanup();
-  result.callback = nullptr;
+  result.callback =  []() {
+    signal_event(MAIN_EVENT_REMOUNT_SPIFFS);
+  };
 
   return result;
 }

@@ -36,7 +36,7 @@ void SPIFFS::init()
   ESP_LOGI(TAG, "Mount OK.");
 
   // Check for root directory
-  // Tricks the VFS into understand a directory exists at the root of this FS
+  // Tricks the VFS into understanding a directory exists at the root of this FS
   struct stat st;
   bool exists = (stat(ROOT_DIR, &st) == 0);
   if (!exists || !S_ISDIR(st.st_mode))
@@ -48,4 +48,24 @@ void SPIFFS::init()
       return;
     }
   }
+}
+
+/**
+  @brief  Remount the SPIFFS in case the partition has changed underneath
+
+  @param  none
+  @retval none
+*/
+void SPIFFS::remount()
+{
+  if (esp_spiffs_mounted(nullptr))
+  {
+    // Unregister/demount if counted
+    esp_err_t result = esp_vfs_spiffs_unregister(nullptr);
+    if (result != ESP_OK)
+      ESP_LOGW(TAG, "Failed to unregister with VFS. Error: %s",  esp_err_to_name(result));
+  }
+
+  // Remount
+  SPIFFS::init();
 }

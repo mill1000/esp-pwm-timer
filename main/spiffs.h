@@ -6,6 +6,7 @@ namespace SPIFFS
   constexpr const char* ROOT_DIR = "/spiffs";
 
   void init(void);
+  void remount(void);
 }
 
 #endif
