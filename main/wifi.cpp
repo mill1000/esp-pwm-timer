@@ -121,8 +121,8 @@ void WiFi::init_station()
   memset(&wifi_config, 0, sizeof(wifi_config_t));
 
   // Set configured SSID and password
-  strcpy((char*)wifi_config.sta.ssid,     CONFIG_ESP_WIFI_SSID);
-  strcpy((char*)wifi_config.sta.password, CONFIG_ESP_WIFI_PASSWORD);
+  strcpy((char*)wifi_config.sta.ssid,     CONFIG_WIFI_SSID);
+  strcpy((char*)wifi_config.sta.password, CONFIG_WIFI_PASSWORD);
   
   // Enable protected management frames
   wifi_config.sta.pmf_cfg.capable = true;
