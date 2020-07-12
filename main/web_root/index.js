@@ -222,7 +222,8 @@ function sendJsonXhrRequest(json, callback) {
   if (typeof josn != "string")
     json = JSON.stringify(json);
 
-  // Hack to keep empty strings from tabulator from crash json parser
+  // Hack to keep empty strings from tabulator crashing the json parser
+  // when it expects a number
   json = json.replace(/\:\"\"/gi, ":null");
 
   let xhr = new XMLHttpRequest();
