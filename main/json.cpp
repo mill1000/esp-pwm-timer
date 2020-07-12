@@ -95,9 +95,17 @@ bool JSON::parse_settings(const std::string& jString)
   if (root.contains("system"))
   {
     nlohmann::json system = root.at("system");
+
+    ESP_LOGD(TAG, "System: %s", system.dump().c_str());
     
-    std::string hostname = system["hostname"].get<std::string>();
+    std::string hostname = JSON::get_or_default<std::string>(system, "hostname");
     NVS::save_hostname(hostname);
+
+    if (system.contains("ntp_servers"))
+    {
+      std::vector<std::string> servers = system["ntp_servers"].get<std::vector<std::string>>();
+      NVS::save_ntp_servers(servers);
+    }
   }
 
   return true;
@@ -183,7 +191,10 @@ std::string JSON::get_settings()
 
   // Create & populate system object
   nlohmann::json system = nlohmann::json::object();
+
   JSON::set_if_valid<std::string>(system, "hostname", NVS::get_hostname(), [](const std::string& s) { return !s.empty(); });
+
+  system["ntp_servers"] = nlohmann::json(NVS::get_ntp_servers());
 
   // Add all the objects to our root
   nlohmann::json root;
