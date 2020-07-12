@@ -94,6 +94,9 @@ static void parse_system_json(const nlohmann::json& system)
   std::string hostname = JSON::get_or_default<std::string>(system, "hostname");
   NVS::save_hostname(hostname);
 
+  std::string tz = JSON::get_or_default<std::string>(system, "timezone");
+  NVS::save_timezone(tz);
+
   if (system.contains("ntp_servers"))
   {
     nlohmann::json ntp_servers = system.at("ntp_servers");
@@ -227,6 +230,7 @@ static nlohmann::json get_system_json()
   nlohmann::json system = nlohmann::json::object();
 
   JSON::set_if_valid<std::string>(system, "hostname", NVS::get_hostname(), [](const std::string& s) { return !s.empty(); });
+  JSON::set_if_valid<std::string>(system, "timezone", NVS::get_timezone(), [](const std::string& s) { return !s.empty(); });
 
   system["ntp_servers"] = 
   {

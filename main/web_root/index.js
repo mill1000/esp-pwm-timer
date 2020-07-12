@@ -295,6 +295,7 @@ function save() {
 
   settings.system = {
     hostname: document.getElementById("hostname").value,
+    timezone: document.getElementById("timezone").value,
     ntp_servers: [
       document.getElementById("ntp_server_1").value,
       document.getElementById("ntp_server_2").value,
@@ -333,6 +334,7 @@ function load() {
     scheduleTable.replaceData(Schedule.from_dictionary(settings.schedule));
 
     document.getElementById("hostname").value = settings.system.hostname;
+    document.getElementById("timezone").value = settings.system.timezone;
     document.getElementById("ntp_server_1").value = settings.system.ntp_servers[0];
     document.getElementById("ntp_server_2").value = settings.system.ntp_servers[1];
 
