@@ -9,6 +9,7 @@
 #include <string>
 
 #include "ota_interface.h"
+#include "main.h"
 
 #define TAG "OTA"
 
@@ -152,23 +153,27 @@ esp_err_t OTA::AppHandle::write(uint8_t* data, uint16_t length)
 }
 
 /**
-  @brief  Finalize an OTA update. Sets boot paritions and reboots device
+  @brief  Finalize an OTA update. Sets boot paritions and returns callback to reboot
   
   @param  none
-  @retval esp_err_t
+  @retval OTA::end_result_t
 */
-esp_err_t OTA::AppHandle::end()
+OTA::end_result_t OTA::AppHandle::end()
 {
+  // Construct result object
+  OTA::end_result_t result;
+  result.callback = nullptr;
+
   // Perform clean up operations
-  esp_err_t result = cleanup();
-  if (result != ESP_OK) 
+  result.status = cleanup();
+  if (result.status != ESP_OK) 
     return result;
 
   const esp_partition_t* target = esp_ota_get_next_update_partition(NULL);
-  result = esp_ota_set_boot_partition(target);
-  if (result != ESP_OK) 
+  result.status = esp_ota_set_boot_partition(target);
+  if (result.status != ESP_OK) 
   {
-    ESP_LOGE(TAG, "esp_ota_set_boot_partition failed, err=0x%x.", result);
+    ESP_LOGE(TAG, "esp_ota_set_boot_partition failed, err=0x%x.", result.status);
     ota.state = STATE_IDLE;
     return result;
   }
@@ -176,19 +181,14 @@ esp_err_t OTA::AppHandle::end()
   const esp_partition_t* boot = esp_ota_get_boot_partition();
   ESP_LOGI(TAG, "Boot partition type %d subtype %d at offset 0x%x.", boot->type, boot->subtype, boot->address);
 
-  // Create a timer that will reset the device
-  TimerHandle_t rebootTimer = xTimerCreate("OTATimer", pdMS_TO_TICKS(3000), false, 0, [](TimerHandle_t){
-    ESP_LOGI(TAG, "Rebooting...");
-    ota.state = OTA::STATE_IDLE;
-    esp_restart();
-  });
+  // Success. Update status and set reboot callback
+  result.status = ESP_OK;
+  result.callback = []() {
+    ota.state = OTA::STATE_REBOOT;
+    signal_event(MAIN_EVENT_REBOOT);
+  };
   
-  // Start the reboot timer
-  if (xTimerStart(rebootTimer, pdMS_TO_TICKS(1000)) != pdPASS)
-    ESP_LOGE(TAG, "Failed to start reboot timer.");
-
-  ota.state = OTA::STATE_REBOOT;
-  return ESP_OK;
+  return result;
 }
 
 /**
@@ -315,7 +315,11 @@ esp_err_t OTA::SpiffsHandle::write(uint8_t* data, uint16_t length)
   @param  none
   @retval esp_err_t
 */
-esp_err_t OTA::SpiffsHandle::end()
+OTA::end_result_t OTA::SpiffsHandle::end()
 {
-  return cleanup();
+  OTA::end_result_t result;
+  result.status = cleanup();
+  result.callback = nullptr;
+
+  return result;
 }

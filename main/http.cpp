@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <queue>
 
 #include "http.h"
 #include "mongoose.h"
@@ -104,7 +105,10 @@ static void httpEventHandler(struct mg_connection* nc, int ev, void* ev_data)
 */
 static void otaEventHandler(struct mg_connection* nc, int ev, void* ev_data)
 {
-  constexpr uint32_t OTA_FAILED_FLAG = MG_F_USER_1;
+  constexpr uint32_t MG_F_OTA_FAILED = MG_F_USER_1;
+  constexpr uint32_t MG_F_OTA_COMPLETE = MG_F_USER_2;
+
+  static std::queue<OTA::end_callback_t> callbacks;
   static std::string response;
 
   switch(ev)
@@ -134,7 +138,7 @@ static void otaEventHandler(struct mg_connection* nc, int ev, void* ev_data)
 
         // Mark OTA as failed and append reason
         response += "OTA update already in progress.";
-        nc->flags |= OTA_FAILED_FLAG;
+        nc->flags |= MG_F_OTA_FAILED;
         return;
       }
 
@@ -147,7 +151,7 @@ static void otaEventHandler(struct mg_connection* nc, int ev, void* ev_data)
 
         // Mark OTA as failed and append reason
         response += "OTA update init failed.";
-        nc->flags |= OTA_FAILED_FLAG;
+        nc->flags |= MG_F_OTA_FAILED;
         return;
       }
 
@@ -159,7 +163,7 @@ static void otaEventHandler(struct mg_connection* nc, int ev, void* ev_data)
 
         // Mark OTA as failed and append reason
         response += "OTA update init failed.";
-        nc->flags |= OTA_FAILED_FLAG;
+        nc->flags |= MG_F_OTA_FAILED;
 
         // Kill the handle
         delete ota;
@@ -177,7 +181,7 @@ static void otaEventHandler(struct mg_connection* nc, int ev, void* ev_data)
       struct mg_http_multipart_part* multipart = (struct mg_http_multipart_part*) ev_data;
 
       // Something went wrong so ignore the data
-      if (nc->flags & OTA_FAILED_FLAG)
+      if (nc->flags & MG_F_OTA_FAILED)
         return;
 
       // Fetch handle from user_data
@@ -189,7 +193,7 @@ static void otaEventHandler(struct mg_connection* nc, int ev, void* ev_data)
       {
         // Mark OTA as failed and append reason
         response += "OTA write failed.";
-        nc->flags |= OTA_FAILED_FLAG;
+        nc->flags |= MG_F_OTA_FAILED;
       }
       break;
     }
@@ -203,13 +207,19 @@ static void otaEventHandler(struct mg_connection* nc, int ev, void* ev_data)
       if (ota == nullptr)
         return;
 
-      // Even if OTA_FAILED_FLAG is set we should let the OTA try to clean up
+      // Even if MG_F_OTA_FAILED is set we should let the OTA try to clean up
 
       ESP_LOGI(TAG, "Ending OTA...");
-      if (ota->end() != ESP_OK)
+      OTA::end_result_t result = ota->end();
+
+      // Save callback
+      callbacks.push(result.callback);
+
+      // Update response if error
+      if (result.status != ESP_OK)
       {
         response += "OTA end failed.";
-        nc->flags |= OTA_FAILED_FLAG;
+        nc->flags |= MG_F_OTA_FAILED;
       }
 
       // Free the handle object and reference
@@ -221,13 +231,35 @@ static void otaEventHandler(struct mg_connection* nc, int ev, void* ev_data)
     case MG_EV_HTTP_MULTIPART_REQUEST_END:
     {
       // Send the appropriate response status 
-      if (nc->flags & OTA_FAILED_FLAG)
+      if (nc->flags & MG_F_OTA_FAILED)
         httpSendResponse(nc, 500, response.c_str());
       else
         httpSendResponse(nc, 200, "OTA update successful.");
-      
+
+      // Signal OTA is complete
+      nc->flags |= MG_F_OTA_COMPLETE;
+
       response.clear();
       break;
+    }
+
+    case MG_EV_CLOSE:
+    {
+      // Ignore close events that aren't after an OTA
+      if ((nc->flags & MG_F_OTA_COMPLETE) != MG_F_OTA_COMPLETE)
+       return;
+      
+      // Fire callbacks once OTA connection has closed
+      while (callbacks.empty() == false)
+      {
+        OTA::end_callback_t callback = callbacks.front();
+        if (callback)
+          callback();
+
+        callbacks.pop();
+      }
+    
+     break; 
     }
   }
 }
