@@ -319,3 +319,30 @@ std::string NVS::get_ntp_server(uint8_t index)
   
   return server;
 }
+
+/**
+  @brief  Save timezone to NVS
+  
+  @param  tz Timezone string
+  @retval none
+*/
+void NVS::save_timezone(const std::string& tz)
+{
+  parameters.nvs_set<std::string>("timezone", tz);
+
+  parameters.commit();
+}
+
+/**
+  @brief  Fetch timezone from NVS
+  
+  @param  none
+  @retval std::string
+*/
+std::string NVS::get_timezone()
+{
+  std::string tz = "";
+  parameters.nvs_get<std::string>("timezone", tz);
+  
+  return tz;
+}

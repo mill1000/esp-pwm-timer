@@ -35,6 +35,9 @@ namespace NVS
 
   void save_ntp_server(uint8_t index, const std::string& server);
   std::string get_ntp_server(uint8_t index);
+
+  void save_timezone(const std::string& tz);
+  std::string get_timezone(void);
 }
 
 #endif
