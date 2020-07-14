@@ -213,22 +213,21 @@ function timeEditor(cell, onRendered, success, cancel, editorParams) {
 var Status = {
   _element: document.getElementById("status"),
 
-  set: function (message) {
-    this._element.innerHTML = message;
+  set: function (message, detail = null) {
+    let inner = message;
+    if (detail)
+      inner += "<br/><span class=\"subtext\">{0}</span>".format(detail)
+    this._element.innerHTML = inner;
   },
 
   set_success: function (message, detail = null) {
-    let inner = "&check; {0}".format(message)
-    if (detail)
-      inner += "<br/><span class=\"subtext\">{0}</span>".format(detail)
-    this.set(inner);
+    message = "&check; {0}".format(message)
+    this.set(message, detail);
   },
 
   set_error: function (message, detail = null) {
-    let inner = "&#x26A0; {0}".format(message)
-    if (detail)
-      inner += "<br/><span class=\"subtext\">{0}</span>".format(detail)
-    this.set(inner);
+    message = "&#x26A0; {0}".format(message)
+    this.set(message, detail);
   },
 }
 
