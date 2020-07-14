@@ -337,26 +337,81 @@ function save() {
   });
 }
 
+function updateTables(settings) {
+  timerTable.setData(Timers.from_dictionary(settings.timers));
+  channelTable.setData(Channels.from_dictionary(settings.channels));
+
+  // Manually trigger column update dumb!
+  scheduleTable.setColumns(columnTemplate.concat(Channels.columns));
+  scheduleTable.replaceData(Schedule.from_dictionary(settings.schedule));
+
+  document.getElementById("hostname").value = settings.system.hostname;
+  document.getElementById("timezone").value = settings.system.timezone;
+  document.getElementById("ntp_server_1").value = settings.system.ntp_servers[0];
+  document.getElementById("ntp_server_2").value = settings.system.ntp_servers[1];
+}
+
 function load() {
   Status.set("Loading settings...");
   getJsonXhrRequest().then((settings) => {
-
-    timerTable.setData(Timers.from_dictionary(settings.timers));
-    channelTable.setData(Channels.from_dictionary(settings.channels));
-
-    // Manually trigger column update dumb!
-    scheduleTable.setColumns(columnTemplate.concat(Channels.columns));
-    scheduleTable.replaceData(Schedule.from_dictionary(settings.schedule));
-
-    document.getElementById("hostname").value = settings.system.hostname;
-    document.getElementById("timezone").value = settings.system.timezone;
-    document.getElementById("ntp_server_1").value = settings.system.ntp_servers[0];
-    document.getElementById("ntp_server_2").value = settings.system.ntp_servers[1];
-
+    updateTables(settings);
     Status.set_success("Settings loaded.");
   }).catch((message) => {
     Status.set_error("Load failed.", message);
   });
+}
+
+function backup() {
+  Status.set("Fetching backup...");
+
+  getJsonXhrRequest().then((settings) => {
+    let element = document.createElement("a");
+    element.setAttribute("href", "data:application/json;charset=utf-8," + encodeURIComponent(JSON.stringify(settings)));
+    element.setAttribute("download", "{0}.json".format(settings.system.hostname));
+
+    element.style.display = "none";
+    document.body.appendChild(element);
+
+    element.click();
+
+    document.body.removeChild(element);
+
+    Status.set_success("Complete.");
+  }).catch((message) => {
+    Status.set_error("Backup failed.", message);
+  });
+}
+
+function restore() {
+  let element = document.createElement("input");
+  element.setAttribute("type", "file");
+  element.setAttribute("accept", ".json");
+
+  element.style.display = "none";
+  document.body.appendChild(element);
+
+  element.click();
+
+  document.body.removeChild(element);
+
+  element.onchange = () => {
+    let file = element.files[0]
+    if (!file)
+      return;
+
+    file.text().then(text => {
+      updateTables(JSON.parse(text));
+
+      Status.set_success("Settings restored.");
+
+      let confirmed = confirm("Settings restored. Save to device now?");
+
+      if (!confirmed)
+        return;
+
+      save();
+    });
+  };
 }
 
 function* range(start, end, step) {

@@ -28,6 +28,7 @@
   .container {margin: 1rem 0;}
   .space_evenly {display: flex; justify-content: space-evenly;}
   .flex_end {display: flex; justify-content: flex-end; }
+  .grow {flex-grow: 1;}
   .chart {position: relative; height: 33vh;}
 
   .tabulator-col-title {text-align: center;}
@@ -87,7 +88,6 @@
   }
 
   #status {
-    flex-grow: 1;
     font-size: larger;
   }
 
@@ -120,6 +120,7 @@
 
   .page button {
     padding: .5rem .5rem;
+    margin: 0 .25rem;
   }
 
   .page form {
@@ -153,7 +154,7 @@
 </div>
 
 <div id="footer">
-  <span id="status"></span>
+  <span class="grow" id="status"></span>
   <button class="danger" onclick="load()">Reset</button>
   <button class="good" onclick="save()">Save</button>
 </div>
@@ -197,7 +198,11 @@
     <label for="ntp_server_2">NTP Server 2</label>
     <input type="text" id="ntp_server_2"/>
   </form>
-  <span class="subtext">System settings require a reboot to take effect.</span>
+  <div class= "container flex_end">
+    <span class="subtext grow">System settings require a reboot to take effect.</span>
+    <button onclick="backup()">Backup</button>
+    <button onclick="restore()">Restore</button>
+  </div>
 </div>
 
 <div id="modal" class="tingle-modal modal-content">
