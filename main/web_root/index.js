@@ -217,8 +217,11 @@ var Status = {
     this._element.innerHTML = message;
   },
 
-  set_success: function (message) {
-    this.set("&check; {0}".format(message));
+  set_success: function (message, detail = null) {
+    let inner = "&check; {0}".format(message)
+    if (detail)
+      inner += "<br/><span class=\"subtext\">{0}</span>".format(detail)
+    this.set(inner);
   },
 
   set_error: function (message, detail = null) {
