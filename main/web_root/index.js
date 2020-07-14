@@ -237,17 +237,27 @@ function sendJsonXhrRequest(json, callback) {
   // when it expects a number
   json = json.replace(/\:\"\"/gi, ":null");
 
-  let xhr = new XMLHttpRequest();
-  xhr.onreadystatechange = function () {
-    if (xhr.readyState == XMLHttpRequest.DONE) {
-      callback(xhr.status)
-    }
-  };
+  let promise = new Promise((resolve, reject) => {
+    let xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = () => {
+      if (xhr.readyState == XMLHttpRequest.DONE) {
+        if (xhr.status == 200) {
+          resolve();
+        }
+        else {
+          let message = "Error: {0}".format((xhr.status != 0) ? xhr.responseText : "Timeout");
+          reject(message);
+        }
+      }
+    };
 
-  xhr.open("POST", window.location.host + "/?action=set");
-  xhr.timeout = 5000;
-  xhr.setRequestHeader("Content-Type", "application/json");
-  xhr.send(json);
+    xhr.open("POST", window.location.host + "/?action=set");
+    xhr.timeout = 5000;
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.send(json);
+  });
+
+  return promise;
 }
 
 function getJsonXhrRequest() {
@@ -316,30 +326,23 @@ function save() {
   console.log("Channels:" + JSON.stringify(settings.channels));
   console.log("Schedule:" + JSON.stringify(settings.schedule));
 
-  function setCallback(status) {
-    if (status == 200)
-      Status.set_success("Complete.");
-    else {
-      let message = "Error: {0}".format((status != 0) ? xhr.responseText : "Timeout");
-      Status.set_error("Save failed.", message);
-    }
-  }
-
   Status.set("Sending settings...");
-  sendJsonXhrRequest(settings, setCallback);
+  sendJsonXhrRequest(settings).then(() => {
+    Status.set_success("Complete.");
+  }).catch((message) => {
+    Status.set_error("Save failed.", message);
+  });
 }
 
 function load() {
   Status.set("Loading settings...");
-  getJsonXhrRequest().catch((message) => {
-    Status.set_error("Load failed.", message);
-  }).then((settings) => {
+  getJsonXhrRequest().then((settings) => {
+
     timerTable.setData(Timers.from_dictionary(settings.timers));
     channelTable.setData(Channels.from_dictionary(settings.channels));
 
     // Manually trigger column update dumb!
     scheduleTable.setColumns(columnTemplate.concat(Channels.columns));
-
     scheduleTable.replaceData(Schedule.from_dictionary(settings.schedule));
 
     document.getElementById("hostname").value = settings.system.hostname;
@@ -348,6 +351,8 @@ function load() {
     document.getElementById("ntp_server_2").value = settings.system.ntp_servers[1];
 
     Status.set_success("Settings loaded.");
+  }).catch((message) => {
+    Status.set_error("Load failed.", message);
   });
 }
 
