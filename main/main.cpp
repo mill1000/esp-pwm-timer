@@ -42,7 +42,7 @@ extern "C" void app_main()
   SPIFFS::init();
 
   // Start the HTTP task
-  xTaskCreate(httpTask, "HTTPTask", 8192, NULL, 1, NULL);
+  xTaskCreate(HTTP::task, "HTTPTask", 8192, NULL, 1, NULL);
 
   // Create an event group to run the main loop from
   mainEventGroup = xEventGroupCreate();

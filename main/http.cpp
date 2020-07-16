@@ -270,7 +270,7 @@ static void otaEventHandler(struct mg_connection* nc, int ev, void* ev_data)
   @param  pvParameters
   @retval none
 */
-void httpTask(void * pvParameters)
+void HTTP::task(void* pvParameters)
 {
   ESP_LOGI(TAG, "Starting HTTP server...");
 
