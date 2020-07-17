@@ -55,7 +55,7 @@
   overflow-x: hidden;
   }
 
-  #sidebar a {
+  #sidebar a, #sidebar span {
     display: block;
     padding: .5rem 1rem;
     text-decoration: none;
@@ -151,6 +151,7 @@
   <a href="#schedule">Schedule</a>
   <a href="#configure">Channel Setup</a>
   <a href="#system">System Settings</a>
+  <span id="system_time"></span>
 </div>
 
 <div id="footer">
@@ -467,6 +468,15 @@ var chart = new Chart(context, {
     }
   }
 });
+
+let socket = new WebSocket("ws://" + location.host);
+//let ws_timeout = setTimeout(() => document.getElementById("rtime").innerHTML = "Time out");
+socket.onmessage = (ev) => {
+  let status = JSON.parse(ev.data);
+  let now = moment.parseZone(status.time);
+  if (now.isValid)
+    document.getElementById("system_time").innerHTML = now.format("h:mm:ss A");
+};
 </script>
 </body>
 </html>

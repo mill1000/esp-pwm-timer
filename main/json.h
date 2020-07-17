@@ -33,6 +33,8 @@ namespace JSON
   std::string get_settings(void);
 
   Schedule::entry_t parse_schedule_entry(const std::string& jEntry);
+
+  std::string get_status(void);
 }
 
 #endif

@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <queue>
+#include <unordered_set>
 
 #include "http.h"
 #include "mongoose.h"
@@ -37,6 +38,9 @@ static void httpSendResponse(struct mg_connection* nc, uint16_t code, const char
 */
 static void httpEventHandler(struct mg_connection* nc, int ev, void* ev_data)
 {
+  static std::unordered_set<mg_connection*> ws_clients;
+  constexpr double ws_interval = .5f; // 500 ms
+
   switch(ev)
   {
     case MG_EV_HTTP_REQUEST:
@@ -87,6 +91,56 @@ static void httpEventHandler(struct mg_connection* nc, int ev, void* ev_data)
         mg_http_send_redirect(nc, 302, hm->uri, mg_mk_str(NULL));
         nc->flags |= MG_F_SEND_AND_CLOSE;   
       }
+      break;
+    }
+
+    case MG_EV_WEBSOCKET_HANDSHAKE_DONE:
+    {
+      char addr[32];
+      mg_sock_addr_to_str(&nc->sa, addr, sizeof(addr), MG_SOCK_STRINGIFY_IP | MG_SOCK_STRINGIFY_PORT);
+      ESP_LOGI(TAG, "Websocket connect from %s", addr);
+
+      if (ws_clients.empty())
+        mg_set_timer(nc, mg_time() + ws_interval);
+      
+      ws_clients.insert(nc);
+
+      break;
+    }
+
+    case MG_EV_CLOSE:
+    {
+      if (nc->flags & MG_F_IS_WEBSOCKET)
+      {
+        char addr[32];
+        mg_sock_addr_to_str(&nc->sa, addr, sizeof(addr), MG_SOCK_STRINGIFY_IP | MG_SOCK_STRINGIFY_PORT);
+        ESP_LOGI(TAG, "Websocket disconnect from %s", addr);
+
+        ws_clients.erase(nc);
+
+        if (!ws_clients.empty() && nc->ev_timer_time != 0)
+        {
+          // Move the event timer to another connection if this connection was handling interval timing
+          mg_set_timer(*ws_clients.begin(), nc->ev_timer_time);
+        }
+      }
+      break;
+    }
+
+    case MG_EV_TIMER:
+    {
+      // Reset time to trigger
+      double eventTime = *((double*) ev_data);
+      mg_set_timer(nc, eventTime + ws_interval);
+
+      std::string status = JSON::get_status();
+
+      for (const auto &c : ws_clients)
+      {
+        if ((c->flags & MG_F_IS_WEBSOCKET) && (c->send_mbuf.len == 0))   
+          mg_send_websocket_frame(c, WEBSOCKET_OP_TEXT, status.c_str(), status.length());
+      }
+
       break;
     }
 

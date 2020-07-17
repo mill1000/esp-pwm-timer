@@ -291,3 +291,24 @@ Schedule::entry_t JSON::parse_schedule_entry(const std::string& jEntry)
 
   return entry;
 }
+
+/**
+  @brief  Build a JSON string of the system status
+  
+  @param  none
+  @retval std::string
+*/
+std::string JSON::get_status()
+{
+  // Add all the objects to our root
+  nlohmann::json root;
+
+  time_t utc = time(nullptr);
+  
+  char datetime[32] = {0};
+  strftime(datetime, 32, "%FT%T%z", localtime(&utc));
+
+  root["time"] = std::string(datetime);
+  
+  return root.dump();
+}
