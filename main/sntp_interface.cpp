@@ -23,20 +23,8 @@ void SNTP::init(const std::string& timezone, const server_list_t& servers, sync_
 {
   static sync_callback_t s_callback = callback;
 
-  // Configure timezome for conversion
-  setenv("TZ", timezone.c_str(), 1);
-  tzset();
-
-  ESP_LOGI(TAG, "TZ: '%s'", timezone.c_str());
-
-  // Add servers to the list
-  uint8_t index = 0;
-  for (auto& server : servers)
-  {
-    sntp_setservername(index, server.c_str());
-    ESP_LOGI(TAG, "Server %d: '%s'", index, server.c_str());
-    index++;
-  }
+  // Configure timezone and servers
+  reconfigure(timezone, servers);
 
   // Use polling, and immediately update time
   sntp_setoperatingmode(SNTP_OPMODE_POLL);
@@ -53,4 +41,29 @@ void SNTP::init(const std::string& timezone, const server_list_t& servers, sync_
   });
 
   sntp_init();
+}
+
+/**
+  @brief  Reconfigure the SNTP system
+  
+  @param  timezone Timezone string for TZ enviroment variable
+  @param  servers Array of server hostname & address to use
+  @retval none
+*/
+void SNTP::reconfigure(const std::string& timezone, const server_list_t& servers)
+{
+  // Configure timezome for conversion
+  setenv("TZ", timezone.c_str(), 1);
+  tzset();
+
+  ESP_LOGI(TAG, "TZ: '%s'", timezone.c_str());
+
+  // Add servers to the list
+  uint8_t index = 0;
+  for (auto& server : servers)
+  {
+    sntp_setservername(index, server.c_str());
+    ESP_LOGI(TAG, "Server %d: '%s'", index, server.c_str());
+    index++;
+  }
 }

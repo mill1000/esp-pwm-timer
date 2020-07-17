@@ -12,6 +12,7 @@ typedef enum
   // System events
   MAIN_EVENT_REBOOT           = 1 << 4,
   MAIN_EVENT_REMOUNT_SPIFFS   = 1 << 5,
+  MAIN_EVENT_RECONFIGURE_SNTP = 1 << 6,
   MAIN_EVENT_ALL              = 0x00FFFFFF, // 24 bits max
 } MAIN_EVENT;
 

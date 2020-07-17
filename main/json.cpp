@@ -107,6 +107,8 @@ static void parse_system_json(const nlohmann::json& system)
       NVS::save_ntp_server(i, server);
     }
   }
+
+  signal_event(MAIN_EVENT_RECONFIGURE_SNTP);
 }
 
 /**

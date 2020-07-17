@@ -185,6 +185,22 @@ extern "C" void app_main()
       ESP_LOGI(TAG, "Remounting SPIFFS.");
       SPIFFS::remount();
     }
+
+    if (events & MAIN_EVENT_RECONFIGURE_SNTP)
+    {
+      ESP_LOGI(TAG, "Reconfiguring SNTP.");
+
+      // Construct server list
+      SNTP::server_list_t ntp_servers = {
+        NVS::get_ntp_server(0),
+        NVS::get_ntp_server(1),
+      };
+
+      SNTP::reconfigure(NVS::get_timezone(), ntp_servers);
+
+      // Trigger system time update in case timezone causes a schedule change
+      signal_event(MAIN_EVENT_SYSTEM_TIME_UPDATED);
+    }
   }
 }
 
