@@ -469,13 +469,38 @@ var chart = new Chart(context, {
   }
 });
 
+let WSTimeout = {
+  _timeout: null,
+  _action: null,
+  _interval: null,
+
+  reset: function () {
+    if (this._timeout)
+      clearTimeout(this._timeout);
+    
+    if (this._interval && this._action)
+      this._timeout = setTimeout(this._action, this._interval);
+  },
+
+  start: function (action, interval) {
+    this._action = action;
+    this._interval = interval;
+
+    return this.reset();
+  },
+}
+WSTimeout.start(()=> document.getElementById("system_time").innerHTML = "__:__:__ __", 1000);
+
 let socket = new WebSocket("ws://" + location.host);
-//let ws_timeout = setTimeout(() => document.getElementById("rtime").innerHTML = "Time out");
 socket.onmessage = (ev) => {
   let status = JSON.parse(ev.data);
   let now = moment.parseZone(status.time);
   if (now.isValid)
+  {
+    WSTimeout.reset();
+
     document.getElementById("system_time").innerHTML = now.format("h:mm:ss A");
+  }
 };
 </script>
 </body>
