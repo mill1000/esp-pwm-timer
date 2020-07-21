@@ -205,40 +205,6 @@
     <button onclick="restore()">Restore</button>
   </div>
 </div>
-
-<div id="modal" class="tingle-modal modal-content">
-<div class="modal-header">
-<h2>Add Sweep</h2>
-</div>
-<form id="modal-form">
-  <label for="startTime">Start Time</label>
-  <input class="time-picker" type="time" id="startTime" required/>
-
-  <label for="startIntensity">Start Intensity</label>
-  <input id="startIntensity" type="number" min="0" max="100" required/>
-
-  <label for="endTime">End Time</label>
-  <input class="time-picker" type="time" id="endTime" required/>
-
-  <label for="endIntensity">End Intensity</label>
-  <input id="endIntensity" type="number" min="0" max="100" required/>
-
-  <label for="mode-group">Mode</label>
-  <div class="radio-group" id="mode-group">
-    <input type="radio" name="mode" id="cubic"  value="cubic" checked><label for="cubic">Cubic</label>
-    <input type="radio" name="mode" id="linear" value="linear"><label for="linear">Linear</label>
-  </div>
-  
-  <label for="step-group">Step Type</label>
-  <div class="radio-group" id="step-group">
-    <input type="radio" name="stepMode" id="time" value="time" onchange='document.getElementById("stepLabel").innerHTML="Minutes Per"' checked><label for="time">Time</label>
-    <input type="radio" name="stepMode" id="count" value="count" onchange='document.getElementById("stepLabel").innerHTML="Step Count"'><label for="count">Count</label>
-  </div>
-
-  <label id="stepLabel" for="step">Minutes Per</label>
-  <input id="step" type="number" min="1" max ="120" value="10" required/>
-</form>
-</div>
 <script src="index.js"></script>
 </body>
 </html>

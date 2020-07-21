@@ -96,6 +96,7 @@ class Channel {
       headerContextMenu:
         [
           { label: "Add Sweep", action: generateSweep, },
+          { label: "Scale Channel", action: scaleChannel, },
         ],
     };
   }
@@ -438,6 +439,9 @@ function linear_interpolate(deltaY, x) {
 
 function generateSweep(e, column)
 {
+  // Set the content
+  modal.setContent(sweepModal);
+  
   modal.open_with_promise().then((formData) => {
     // Check the channel ID of the column selected
     let id = column.getField();
@@ -486,6 +490,23 @@ function generateSweep(e, column)
     // Add and resort table
     scheduleTable.updateOrAddData(newRows);
     scheduleTable.setSort("tod", "asc");
+  }).catch(() => null);
+}
+
+
+function scaleChannel(e, column)
+{
+  // Set the content
+  modal.setContent(scaleModal);
+  
+  modal.open_with_promise().then((formData) => {
+    let factor = parseFloat(formData.ratio.value);
+
+    column.getCells().forEach((c) => {
+      let scaled = Math.round(factor * c.getValue());
+      scaled = Math.min(Math.max(scaled, 0), 100);
+      c.setValue(scaled);
+    });
   }).catch(() => null);
 }
 
@@ -592,6 +613,53 @@ var scheduleTable = new Tabulator("#scheduleTable", {
 // Modal setup
 //
 
+const sweepModal = `
+<div>
+<div class="modal-header">
+<h2>Add Sweep</h2>
+</div>
+<form id="modal-form" action="javascript:void(0);">
+  <label for="startTime">Start Time</label>
+  <input class="time-picker" type="time" id="startTime" required/>
+
+  <label for="startIntensity">Start Intensity</label>
+  <input id="startIntensity" type="number" min="0" max="100" required/>
+
+  <label for="endTime">End Time</label>
+  <input class="time-picker" type="time" id="endTime" required/>
+
+  <label for="endIntensity">End Intensity</label>
+  <input id="endIntensity" type="number" min="0" max="100" required/>
+
+  <label for="mode-group">Mode</label>
+  <div class="radio-group" id="mode-group">
+    <input type="radio" name="mode" id="cubic"  value="cubic" checked><label for="cubic">Cubic</label>
+    <input type="radio" name="mode" id="linear" value="linear"><label for="linear">Linear</label>
+  </div>
+  
+  <label for="step-group">Step Type</label>
+  <div class="radio-group" id="step-group">
+    <input type="radio" name="stepMode" id="time" value="time" onchange='document.getElementById("stepLabel").innerHTML="Minutes Per"' checked><label for="time">Time</label>
+    <input type="radio" name="stepMode" id="count" value="count" onchange='document.getElementById("stepLabel").innerHTML="Step Count"'><label for="count">Count</label>
+  </div>
+
+  <label id="stepLabel" for="step">Minutes Per</label>
+  <input id="step" type="number" min="1" max ="120" value="10" required/>
+</form>
+</div>`;
+
+
+const scaleModal = `
+<div>
+<div class="modal-header">
+<h2>Scale Channel</h2>
+</div>
+<form id="modal-form" action="javascript:void(0);">
+  <label for="ratio">Scale Ratio</label>
+  <input id="ratio" type="number" min="0" step=".01" required/>
+</form>
+</div>`;
+
 // Add a function which opens the Modal and returns a promise to be resolved on close
 tingle.modal.prototype.open_with_promise = function ()
 {
@@ -636,11 +704,6 @@ modal.addFooterBtn("Cancel", "tingle-btn tingle-btn--pull-right", () => {
   modal.promise_reject();
   modal.close();
 });
-
-// Set the content
-modal.setContent(document.querySelector(".modal-content").innerHTML);
- // Remove the HTML from the DOM so ids are unique
-document.querySelector(".modal-content").innerHTML = ""
 
 //
 // Chart setup
@@ -711,7 +774,7 @@ let WSTimeout = {
 WSTimeout.start(()=> document.getElementById("system_time").innerHTML = "__:__:__ __", 1000);
 
 // Start status connection
-let socket = new WebSocket("ws://" + location.host);
+let socket = new WebSocket("ws://" + "rivertank.lan");
 socket.onmessage = (ev) => {
   let status = JSON.parse(ev.data);
   let now = moment.parseZone(status.time);
