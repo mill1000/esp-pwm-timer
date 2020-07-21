@@ -96,7 +96,7 @@ class Channel {
       headerContextMenu:
         [
           { label: "Add Sweep", action: generateSweep, },
-          { label: "Scale Channel", action: scaleChannel, },
+          { label: "Scale", action: scaleChannel, },
         ],
     };
   }
