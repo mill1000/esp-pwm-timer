@@ -210,6 +210,11 @@ function timeEditor(cell, onRendered, success, cancel, editorParams) {
   return editor;
 }
 
+
+//
+// Set/get JSON data via XHR
+//
+
 var Status = {
   _element: document.getElementById("status"),
 
@@ -409,6 +414,11 @@ function restore() {
   };
 }
 
+
+//
+// Sweep generation
+//
+
 function* range(start, end, step) {
   if (step == 0 || start == end)
     return;
@@ -426,6 +436,59 @@ function linear_interpolate(deltaY, x) {
   return deltaY * x;
 }
 
+function generateSweep(e, column)
+{
+  modal.open_with_promise().then((formData) => {
+    // Check the channel ID of the column selected
+    let id = column.getField();
+
+    // Get start and end TODs as moment objects
+    let startT = moment(formData.startTime.value, "HH:mm");
+    let endT = moment(formData.endTime.value, "HH:mm");
+    
+    // Calculate the time delta in minutes, and desired step size
+    let deltaT = moment.duration(endT - startT).asMinutes();
+    let step = 0;
+    switch (formData.stepMode.value)
+    {
+      case "time":
+        step = parseInt(formData.step.value);
+        break;
+
+      case "count":
+        step = deltaT / parseInt(formData.step.value);
+        break;
+    }
+
+    // Calculate the intensity delta
+    let startI = parseInt(formData.startIntensity.value);
+    let endI = parseInt(formData.endIntensity.value);
+    let deltaI = endI - startI;
+
+    // Select the interpolation function
+    let interpolate = formData.mode.value == "cubic" ? cubic_interpolate : linear_interpolate;
+
+    let newRows = [];
+    let stepT = startT;
+    for (t of range(0, deltaT, step)) {
+      
+      let stepY = interpolate(deltaI, t/deltaT)
+
+      row = {}
+      row["tod"] = stepT.format("HH:mm");
+      row[id] = Math.round(startI + stepY);
+
+      newRows.push(row);
+
+      stepT = stepT.add(step, "minutes")
+    }
+
+    // Add and resort table
+    scheduleTable.updateOrAddData(newRows);
+    scheduleTable.setSort("tod", "asc");
+  });
+}
+
 function updateScheduleData(data) {
   // Store the data back to the Schedule object and sort it
   Schedule.data = data;
@@ -440,3 +503,225 @@ function updateScheduleData(data) {
     chart.update();
   }
 }
+
+//
+// Tabulator setup
+//
+
+// Define the system config table
+var timerTable = new Tabulator("#timerTable", {
+  headerSort: false, // Don't allow sorting
+  reactiveData: true, // Update data source as table is editted
+  data: Timers.all,
+  layout: "fitColumns",
+  columns: [
+    { title: "Timer", field: "name", widthGrow:3, },
+    { title: "Frequency", field: "freq", widthGrow:2, editor: "number", 
+      editorParams: {
+        min: 0, 
+        max: 50000, 
+        step:1000, 
+        mask: "99999",
+      },
+      validator:"max:50000",
+      tooltip: (c) => !c.isValid() ? "Frequency value must be between 0 Hz and 50 kHz." : "",
+    },
+  ],
+  validationMode: "highlight",
+  tooltipGenerationMode: "hover",
+});
+
+// Define the channel table
+var channelTable = new Tabulator("#channelTable", {
+  headerSort: false, // Don't allow sorting
+  reactiveData: true, // Update data source as table is editted
+  data: Channels.all,
+  layout: "fitColumns",
+  columns: [
+    { title: "ID", field: "id"},
+    { title: "Name", field: "name", widthGrow:3, editor: "input", },
+    { title: "Timer", field: "timer", widthGrow:2, editor: "select", 
+      editorParams:{ 
+        values:() => Timers.select_list,
+        listItemFormatter:(v,t) => Timers.get_name(v),
+      }, 
+      formatter: (c, p, o) => Timers.get_name(c.getValue()),
+    },
+    { title: "GPIO", field: "gpio", editor: "number", editorParams: { min: 0, max: 31, mask: "99" }, validator: ["unique", "max:31"], 
+        cellEdited: (c) => { if (!c.getData().valid) c.getRow().getCell("enabled").setValue(false) },
+        tooltip: (c) => !c.isValid() ? "GPIO value must be unique and between 0-31" : "",
+    },
+    { title: "Enabled", field: "enabled", formatter: "tickCross", hozAlign: "center",
+        cellClick: (e, c) => { if (c.getData().valid) c.setValue(!c.getValue()) },
+        tooltip: (c) => !c.getData().valid ? "GPIO must be assigned to enable channel." : "",
+    }
+  ],
+  dataEdited: () => scheduleTable.setColumns(columnTemplate.concat(Channels.columns)), // Trigger schedule column update whenever this table is changed
+  validationMode: "highlight",
+  tooltipGenerationMode: "hover",
+});
+
+// Template for first 2 columns of schedule table
+var columnTemplate = [
+  { title: "Remove", formatter: "buttonCross", hozAlign: "center", cellClick: (e, cell) => cell.getRow().delete() },
+  { title: "Time Of Day", field: "tod", editor: timeEditor, headerSort: true, sorter: "time", validator: ["unique", "required"],
+    cellEdited: (c) => c.getColumn().validate(),
+    tooltip: (c) => !c.isValid() ? "Time Of Day must be set and unique." : "",
+    sorterParams: {
+      format: "HH:mm",
+      alignEmptyValues: "bottom",
+    }
+  },
+];
+
+var scheduleTable = new Tabulator("#scheduleTable", {
+  headerSort: false,
+  // reactiveData doesn't appear to work if columns are variable
+  //reactiveData: true,
+  data: Schedule.data,
+  layout:"fitDataFill",
+  columns: columnTemplate,
+  validationMode: "highlight",
+  tooltipGenerationMode: "hover",
+  index:"tod",
+  dataEdited: updateScheduleData,
+  dataLoaded: updateScheduleData,
+});
+
+//
+// Modal setup
+//
+
+// Add a function which opens the Modal and returns a promise to be resolved on close
+tingle.modal.prototype.open_with_promise = function ()
+{
+  let promise = new Promise((resolve, reject) => {
+    this.promise_resolve = resolve;
+    this.promise_reject = reject;
+    this.open();
+  });
+
+  return promise;
+}
+
+// Create the modal object
+var modal = new tingle.modal({
+  footer: true,
+  closeMethods: ["overlay", "escape"],
+  closeLabel: "Close",
+  onOpen: () => {
+    // Attach timepickr to our time inputs
+    document.querySelectorAll(".time-picker").forEach((p) => {
+      let picker = flatpickr(p, {
+        enableTime: true,
+        noCalendar: true,
+        dateFormat: "H:i",
+        defaultDate: p.value,
+      });
+    });
+  },
+});
+
+// Close and resolve promise if form is OK
+modal.addFooterBtn("OK", "tingle-btn tingle-btn--pull-right", () => {
+  if (document.getElementById("modal-form").reportValidity())
+  {
+    modal.promise_resolve(document.getElementById("modal-form").elements);
+    modal.close();
+  }
+});
+
+// Close and reject promise
+modal.addFooterBtn("Cancel", "tingle-btn tingle-btn--pull-right", () => {
+  modal.promise_reject();
+  modal.close();
+});
+
+// Set the content
+modal.setContent(document.querySelector(".modal-content").innerHTML);
+ // Remove the HTML from the DOM so ids are unique
+document.querySelector(".modal-content").innerHTML = ""
+
+//
+// Chart setup
+//
+var context = document.getElementById("scheduleChart").getContext("2d");
+var chart = new Chart(context, {
+  type: "line",
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    datasets: {
+      line: {
+        steppedLine: "before",
+        fill: false,
+      },
+    },
+    scales: {
+      xAxes: [{
+        type: "time",
+        time: {
+          parser: "HH:mm",
+          minUnit: "hour",
+        },
+        ticks: {
+          min: "00:00",
+          max: "24:00",
+        },
+      }],
+      yAxes: [{
+        ticks: {
+          min: 0,
+          max: 100,
+        },
+      }],
+    },
+    tooltips: {
+      position: "nearest",
+      mode: "index",
+    },
+    plugins: {
+      colorschemes: {
+        scheme: "brewer.Accent8"
+      }
+    }
+  }
+});
+
+let WSTimeout = {
+  _timeout: null,
+  _action: null,
+  _interval: null,
+
+  reset: function () {
+    if (this._timeout)
+      clearTimeout(this._timeout);
+    
+    if (this._interval && this._action)
+      this._timeout = setTimeout(this._action, this._interval);
+  },
+
+  start: function (action, interval) {
+    this._action = action;
+    this._interval = interval;
+
+    return this.reset();
+  },
+}
+WSTimeout.start(()=> document.getElementById("system_time").innerHTML = "__:__:__ __", 1000);
+
+// Start status connection
+let socket = new WebSocket("ws://" + location.host);
+socket.onmessage = (ev) => {
+  let status = JSON.parse(ev.data);
+  let now = moment.parseZone(status.time);
+  if (now.isValid)
+  {
+    WSTimeout.reset();
+
+    document.getElementById("system_time").innerHTML = now.format("h:mm:ss A");
+  }
+};
+
+// Fetch data from remote
+window.onload = () => load();
