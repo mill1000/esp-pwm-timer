@@ -324,10 +324,6 @@ function save() {
     ],
   }
 
-  console.log("Timers:" + JSON.stringify(settings.timers));
-  console.log("Channels:" + JSON.stringify(settings.channels));
-  console.log("Schedule:" + JSON.stringify(settings.schedule));
-
   Status.set("Sending settings...");
   sendJsonXhrRequest(settings).then(() => {
     Status.set_success("Complete.");
