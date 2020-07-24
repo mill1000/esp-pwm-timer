@@ -154,7 +154,7 @@ extern "C" void app_main()
       ESP_LOGI(TAG, "Timer update. TOD: %ld, Next: %ld, Delta: %ld", tod, next, delta);
 
       // Reset timer for next schedule event
-      if (xTimerChangePeriod(scheduleTimer, pdMS_TO_TICKS(delta * 1000), pdMS_TO_TICKS(1000)) != pdPASS)
+      if (xTimerChangePeriod(scheduleTimer, pdMS_TO_TICKS64(delta * 1000), pdMS_TO_TICKS(1000)) != pdPASS)
         ESP_LOGE(TAG, "Failed to update schedule timer for next event.");
 
       // Pull the expected TOD from the timer ID

@@ -1,6 +1,8 @@
 #ifndef __MAIN_H__
 #define __MAIN_H__
 
+#define pdMS_TO_TICKS64( xTimeInMs ) ( ( ( uint64_t ) ( xTimeInMs ) * configTICK_RATE_HZ ) / ( uint64_t ) 1000 )
+
 typedef enum
 {
   // Events fired for maintaining schedule oop
