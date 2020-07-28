@@ -503,6 +503,8 @@ function scaleChannel(e, column)
     let factor = parseFloat(formData.ratio.value);
 
     column.getCells().forEach((c) => {
+      if (nullOrEmpty(c.getValue()))
+        return;
       let scaled = Math.round(factor * c.getValue());
       scaled = Math.min(Math.max(scaled, 0), 100);
       c.setValue(scaled);
