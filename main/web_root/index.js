@@ -488,7 +488,7 @@ function generateSweep(e, column)
     }
 
     // Add and resort table
-    scheduleTable.updateOrAddData(newRows);
+    scheduleTable.updateOrAddData(newRows).then(() => updateScheduleData(scheduleTable.getData()));
     scheduleTable.setSort("tod", "asc");
   }).catch(() => null);
 }
