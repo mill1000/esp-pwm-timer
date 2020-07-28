@@ -16,6 +16,9 @@ ESP PWM recognizes POSIX style timezones. e.g. Mountain Time (America/Denver) is
 ### Sweep Generation
 The web interface can generate sweeps to slowly ramp up/down the light intensity over time. Right click the channel header to access the context menu and add a sweep.
 
+### Scaling
+ESP PWM can scale all values for a given channel. Select `Scale` in the channel context menu by right clicking on the channel header.
+
 ### Backup & Restore
 All settings, configuration and the schedule can be backed up and restored from your local computer. Backup & restore is found under System Settings.
 
