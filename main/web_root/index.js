@@ -776,7 +776,7 @@ let WSTimeout = {
 WSTimeout.start(()=> document.getElementById("system_time").innerHTML = "__:__:__ __", 1000);
 
 // Start status connection
-let socket = new WebSocket("ws://" + "rivertank.lan");
+let socket = new WebSocket("ws://" + location.host);
 socket.onmessage = (ev) => {
   let status = JSON.parse(ev.data);
   let now = moment.parseZone(status.time);
