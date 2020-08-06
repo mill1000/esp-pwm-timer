@@ -441,6 +441,19 @@ function generateSweep(e, column)
 {
   // Set the content
   modal.setContent(sweepModal);
+
+  // Set the onOpen function
+  modal.opts.onOpen = () => {
+    // Attach timepickr to our time inputs
+    document.querySelectorAll(".time-picker").forEach((p) => {
+      let picker = flatpickr(p, {
+        enableTime: true,
+        noCalendar: true,
+        dateFormat: "H:i",
+        defaultDate: p.value,
+      });
+    });
+  };
   
   modal.open_with_promise().then((formData) => {
     // Check the channel ID of the column selected
@@ -498,6 +511,9 @@ function scaleChannel(e, column)
 {
   // Set the content
   modal.setContent(scaleModal);
+
+  // Nothing to do
+  modal.opts.onOpen = null;
   
   modal.open_with_promise().then((formData) => {
     let factor = parseFloat(formData.ratio.value);
@@ -679,17 +695,6 @@ var modal = new tingle.modal({
   footer: true,
   closeMethods: ["overlay", "escape"],
   closeLabel: "Close",
-  onOpen: () => {
-    // Attach timepickr to our time inputs
-    document.querySelectorAll(".time-picker").forEach((p) => {
-      let picker = flatpickr(p, {
-        enableTime: true,
-        noCalendar: true,
-        dateFormat: "H:i",
-        defaultDate: p.value,
-      });
-    });
-  },
 });
 
 // Close and resolve promise if form is OK
