@@ -501,7 +501,7 @@ function generateSweep(e, column)
     }
 
     // Add and resort table
-    scheduleTable.updateOrAddData(newRows).then(() => updateScheduleData(scheduleTable.getData()));
+    scheduleTable.updateOrAddData(newRows);
     scheduleTable.setSort("tod", "asc");
   }).catch(() => null);
 }
@@ -595,7 +595,7 @@ var channelTable = new Tabulator("#channelTable", {
         tooltip: (c) => !c.getData().valid ? "GPIO must be assigned to enable channel." : "",
     }
   ],
-  dataEdited: () => scheduleTable.setColumns(columnTemplate.concat(Channels.columns)), // Trigger schedule column update whenever this table is changed
+  dataChanged: () => scheduleTable.setColumns(columnTemplate.concat(Channels.columns)), // Trigger schedule column update whenever this table is changed
   validationMode: "highlight",
   tooltipGenerationMode: "hover",
 });
@@ -623,7 +623,7 @@ var scheduleTable = new Tabulator("#scheduleTable", {
   validationMode: "highlight",
   tooltipGenerationMode: "hover",
   index:"tod",
-  dataEdited: updateScheduleData,
+  dataChanged: updateScheduleData,
   dataLoaded: updateScheduleData,
 });
 
