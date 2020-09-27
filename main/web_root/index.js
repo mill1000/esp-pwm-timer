@@ -350,6 +350,8 @@ function updateTables(settings) {
   document.getElementById("timezone").value = settings.system.timezone;
   document.getElementById("ntp_server_1").value = settings.system.ntp_servers[0];
   document.getElementById("ntp_server_2").value = settings.system.ntp_servers[1];
+
+  document.title = "ESP PWM - {0}".format(settings.system.hostname);
 }
 
 function load() {
