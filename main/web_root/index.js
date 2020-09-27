@@ -453,6 +453,18 @@ function generateSweep(e, column)
         defaultDate: p.value,
       });
     });
+
+    // Restore form state
+    if (window.sweepState) {
+      for (let e of window.sweepState) {
+        document.getElementById("modal-form").elements[e.id].value = e.value;
+      }
+    }
+  };
+
+  modal.opts.onClose = () => {
+    // Save form state
+    window.sweepState = document.getElementById("modal-form").elements;
   };
   
   modal.open_with_promise().then((formElements) => {
@@ -515,6 +527,19 @@ function scaleChannel(e, column)
   // Nothing to do
   modal.opts.onOpen = null;
   
+  modal.opts.onOpen = () => {
+    // Restore form values
+    if (window.scaleState) {
+      for (let e of window.scaleState) {
+        document.getElementById("modal-form").elements[e.id].value = e.value;
+      }
+    }
+  };
+
+  modal.opts.onClose = () => {
+    // Save form values
+    window.scaleState = document.getElementById("modal-form").elements;
+  };
   
   modal.open_with_promise().then((formElements) => {
     let factor = parseFloat(formElements.ratio.value);
