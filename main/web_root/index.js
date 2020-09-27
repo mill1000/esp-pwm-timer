@@ -455,35 +455,35 @@ function generateSweep(e, column)
     });
   };
   
-  modal.open_with_promise().then((formData) => {
+  modal.open_with_promise().then((formElements) => {
     // Check the channel ID of the column selected
     let id = column.getField();
 
     // Get start and end TODs as moment objects
-    let startT = moment(formData.startTime.value, "HH:mm");
-    let endT = moment(formData.endTime.value, "HH:mm");
+    let startT = moment(formElements.startTime.value, "HH:mm");
+    let endT = moment(formElements.endTime.value, "HH:mm");
     
     // Calculate the time delta in minutes, and desired step size
     let deltaT = moment.duration(endT - startT).asMinutes();
     let step = 0;
-    switch (formData.stepMode.value)
+    switch (formElements.stepMode.value)
     {
       case "time":
-        step = parseInt(formData.step.value);
+        step = parseInt(formElements.step.value);
         break;
 
       case "count":
-        step = deltaT / parseInt(formData.step.value);
+        step = deltaT / parseInt(formElements.step.value);
         break;
     }
 
     // Calculate the intensity delta
-    let startI = parseInt(formData.startIntensity.value);
-    let endI = parseInt(formData.endIntensity.value);
+    let startI = parseInt(formElements.startIntensity.value);
+    let endI = parseInt(formElements.endIntensity.value);
     let deltaI = endI - startI;
 
     // Select the interpolation function
-    let interpolate = formData.mode.value == "cubic" ? cubic_interpolate : linear_interpolate;
+    let interpolate = formElements.mode.value == "cubic" ? cubic_interpolate : linear_interpolate;
 
     let newRows = [];
     let stepT = startT;
@@ -515,8 +515,9 @@ function scaleChannel(e, column)
   // Nothing to do
   modal.opts.onOpen = null;
   
-  modal.open_with_promise().then((formData) => {
-    let factor = parseFloat(formData.ratio.value);
+  
+  modal.open_with_promise().then((formElements) => {
+    let factor = parseFloat(formElements.ratio.value);
 
     column.getCells().forEach((c) => {
       if (nullOrEmpty(c.getValue()))
