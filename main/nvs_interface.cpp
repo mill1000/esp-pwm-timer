@@ -218,6 +218,10 @@ void NVS::erase_schedule()
 */
 void NVS::commit_schedule()
 {
+  // Save timestamp of schedule
+  schedule.nvs_set<time_t>("timestamp", time(nullptr));
+
+  // Commit to NVS
   schedule.commit();
 }
 
@@ -252,6 +256,20 @@ std::map<std::string, std::string> NVS::get_schedule_json()
   }
 
   return scheduleJson;
+}
+
+/**
+  @brief  Fetch timestamp of the last schedule save
+  
+  @param  none
+  @retval time_t
+*/
+time_t NVS::get_schedule_timestamp()
+{
+  time_t timestamp = (time_t)(-1);
+  schedule.nvs_get<time_t>("timestamp", timestamp);
+  
+  return timestamp;
 }
 
 /**
