@@ -499,9 +499,11 @@ function generateSweep(e, column)
     // Select the interpolation function
     let interpolate = formElements.mode.value == "cubic" ? cubic_interpolate : linear_interpolate;
 
+    deltaT += step;
+    
     let newRows = [];
     let stepT = startT;
-    for (t of range(0, deltaT, step)) {
+    for (t of range(step, deltaT, step)) {
       
       let stepY = interpolate(deltaI, t/deltaT)
 
