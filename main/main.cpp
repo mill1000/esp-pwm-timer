@@ -23,7 +23,7 @@ static EventGroupHandle_t mainEventGroup;
 
 extern "C" void app_main()
 {
-  // Initalize NVS
+  // Initialize NVS
   esp_err_t result = nvs_flash_init();
   if (result == ESP_ERR_NVS_NO_FREE_PAGES || result == ESP_ERR_NVS_NEW_VERSION_FOUND)
   {
@@ -32,10 +32,10 @@ extern "C" void app_main()
   }
   ESP_ERROR_CHECK(result);
 
-  // Initalizer our own NVS interface
+  // Initialize our own NVS interface
   NVS::init();
 
-  // Initalize WiFi and connect to configured network
+  // Initialize WiFi and connect to configured network
   WiFi::init_station();
 
   // Init filesystem
