@@ -1,6 +1,7 @@
 #include "esp_wifi.h"
 #include "esp_err.h"
 #include "esp_log.h"
+#include "freertos/timers.h"
 
 #include <cstring>
 #include <string>
@@ -55,7 +56,16 @@ static void wifiEventHandler(void* arg, esp_event_base_t event_base, int32_t eve
         esp_wifi_connect();
       }
       else
+      {
         ESP_LOGE(TAG, "Failed to connect.");
+
+        ESP_LOGI(TAG, "Retrying in 60 seconds.");
+        TimerHandle_t retry_timer = xTimerCreate("wifiRetry", pdMS_TO_TICKS(60000), pdFALSE, nullptr, [](TimerHandle_t timer){
+          retry_count = WiFi::RETRY_COUNT;
+          esp_wifi_connect();
+        });
+        xTimerStart(retry_timer, portMAX_DELAY);
+      }
       
       break;
     } 
@@ -123,10 +133,13 @@ void WiFi::init_station()
   // Set configured SSID and password
   strcpy((char*)wifi_config.sta.ssid,     CONFIG_WIFI_SSID);
   strcpy((char*)wifi_config.sta.password, CONFIG_WIFI_PASSWORD);
-  
+
   // Enable protected management frames
   wifi_config.sta.pmf_cfg.capable = true;
   wifi_config.sta.pmf_cfg.required = false;
+
+  // Require WPA2
+  wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
 
   ESP_LOGI(TAG, "Connecting to SSID '%s'...", wifi_config.sta.ssid);
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
