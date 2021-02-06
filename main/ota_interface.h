@@ -40,7 +40,7 @@ namespace OTA
       esp_err_t cleanup(void);
 
     private:
-      TimerHandle_t timeoutTimer;
+      TimerHandle_t timeout_timer;
       esp_ota_handle_t handle;
   };
 
@@ -55,7 +55,7 @@ namespace OTA
       esp_err_t cleanup(void);
 
     private:
-      TimerHandle_t timeoutTimer;
+      TimerHandle_t timeout_timer;
       uint32_t written = 0;
       const esp_partition_t* partition = nullptr;
   };

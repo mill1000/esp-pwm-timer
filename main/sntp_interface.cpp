@@ -12,11 +12,11 @@
 #define TAG "SNTP"
 
 /**
-  @brief  Initalize the SNTP with the given timezone and callback
+  @brief  Initialize the SNTP with the given timezone and callback
   
-  @param  timezone Timezone string for TZ enviroment variable
+  @param  timezone Timezone string for TZ environment variable
   @param  servers Array of server hostname & address to use
-  @param  callback sync_callback_t time sync callback funtion
+  @param  callback sync_callback_t time sync callback function
   @retval none
 */
 void SNTP::init(const std::string& timezone, const server_list_t& servers, sync_callback_t callback)
@@ -46,13 +46,13 @@ void SNTP::init(const std::string& timezone, const server_list_t& servers, sync_
 /**
   @brief  Reconfigure the SNTP system
   
-  @param  timezone Timezone string for TZ enviroment variable
+  @param  timezone Timezone string for TZ environment variable
   @param  servers Array of server hostname & address to use
   @retval none
 */
 void SNTP::reconfigure(const std::string& timezone, const server_list_t& servers)
 {
-  // Configure timezome for conversion
+  // Configure timezone for conversion
   setenv("TZ", timezone.c_str(), 1);
   tzset();
 

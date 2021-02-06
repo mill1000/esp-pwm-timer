@@ -19,7 +19,7 @@
 
 #define TAG "Main"
 
-static EventGroupHandle_t mainEventGroup;
+static EventGroupHandle_t event_group;
 
 extern "C" void app_main()
 {
@@ -45,17 +45,17 @@ extern "C" void app_main()
   xTaskCreate(HTTP::task, "HTTPTask", 8192, NULL, 1, NULL);
 
   // Create an event group to run the main loop from
-  mainEventGroup = xEventGroupCreate();
-  if (mainEventGroup == NULL)
+  event_group = xEventGroupCreate();
+  if (event_group == NULL)
     ESP_LOGE(TAG, "Failed to create main event group.");
 
   // Construct a timer to handle the scheduled events
-  TimerHandle_t scheduleTimer = xTimerCreate("ScheduleTimer", 1, false, (void*) Schedule::INVALID_TOD, 
+  TimerHandle_t schedule_timer = xTimerCreate("ScheduleTimer", 1, false, (void*) Schedule::INVALID_TOD, 
     [](TimerHandle_t t) {
       signal_event(MAIN_EVENT_LED_TIMER_EXPIRED);
     });
 
-  if (scheduleTimer == NULL)
+  if (schedule_timer == NULL)
     ESP_LOGE(TAG, "Failed to create schedule timer.");
 
   // Construct server list
@@ -75,14 +75,14 @@ extern "C" void app_main()
   LEDC::init();
 
   // Wait for initial time sync
-  xEventGroupWaitBits(mainEventGroup, MAIN_EVENT_SYSTEM_TIME_UPDATED, pdTRUE, pdFALSE, portMAX_DELAY);
+  xEventGroupWaitBits(event_group, MAIN_EVENT_SYSTEM_TIME_UPDATED, pdTRUE, pdFALSE, portMAX_DELAY);
 
   // Trigger a load of the schedule on start
-  xEventGroupSetBits(mainEventGroup, MAIN_EVENT_SCHEDULE_UPDATE);
+  xEventGroupSetBits(event_group, MAIN_EVENT_SCHEDULE_UPDATE);
 
   while (true)
   {
-    EventBits_t events = xEventGroupWaitBits(mainEventGroup, MAIN_EVENT_ALL, pdTRUE, pdFALSE, portMAX_DELAY);
+    EventBits_t events = xEventGroupWaitBits(event_group, MAIN_EVENT_ALL, pdTRUE, pdFALSE, portMAX_DELAY);
 
     if (events & MAIN_EVENT_CONFIG_UPDATE)
       LEDC::reconfigure();
@@ -91,11 +91,11 @@ extern "C" void app_main()
     {
       ESP_LOGI(TAG, "Loading schedule...");
 
-      std::map<std::string, std::string> scheduleJson = NVS::get_schedule_json();
+      std::map<std::string, std::string> schedule_json = NVS::get_schedule_json();
 
       schedule.reset();
 
-      for (auto& kv : scheduleJson)
+      for (auto& kv : schedule_json)
       {
         Schedule::time_of_day_t tod = Schedule::get_time_of_day(kv.first);
         Schedule::entry_t entry = JSON::parse_schedule_entry(kv.second);
@@ -106,8 +106,8 @@ extern "C" void app_main()
       Schedule::time_of_day_t prev = schedule.prev(Schedule::get_time_of_day());
 
       // Reset event ID to previous and trigger timer update
-      vTimerSetTimerID(scheduleTimer, (void*) prev);
-      xEventGroupSetBits(mainEventGroup, MAIN_EVENT_LED_TIMER_EXPIRED);
+      vTimerSetTimerID(schedule_timer, (void*) prev);
+      xEventGroupSetBits(event_group, MAIN_EVENT_LED_TIMER_EXPIRED);
     }
 
     if (events & MAIN_EVENT_SYSTEM_TIME_UPDATED)
@@ -121,8 +121,8 @@ extern "C" void app_main()
         continue;
 
       // Calculate the error between the timer's expiration and expected time delta
-      TickType_t remainingTicks = xTimerGetExpiryTime(scheduleTimer) - xTaskGetTickCount();
-      double error = delta - (remainingTicks / (double) pdMS_TO_TICKS(1000));
+      TickType_t remaining_ticks = xTimerGetExpiryTime(schedule_timer) - xTaskGetTickCount();
+      double error = delta - (remaining_ticks / (double) pdMS_TO_TICKS(1000));
 
       ESP_LOGD(TAG, "System time updated. Timer error: %f", error);
 
@@ -131,8 +131,8 @@ extern "C" void app_main()
         ESP_LOGW(TAG, "Timer delta and actual delta differ by more than %d seconds. Updating timer.", Schedule::MAX_SCHEDULE_ERROR);
 
         // Reset event ID and trigger timer update
-        vTimerSetTimerID(scheduleTimer, (void*) Schedule::INVALID_TOD);
-        xEventGroupSetBits(mainEventGroup, MAIN_EVENT_LED_TIMER_EXPIRED);
+        vTimerSetTimerID(schedule_timer, (void*) Schedule::INVALID_TOD);
+        xEventGroupSetBits(event_group, MAIN_EVENT_LED_TIMER_EXPIRED);
       }
     }
 
@@ -154,20 +154,20 @@ extern "C" void app_main()
       ESP_LOGI(TAG, "Timer update. TOD: %ld, Next: %ld, Delta: %ld", tod, next, delta);
 
       // Reset timer for next schedule event
-      if (xTimerChangePeriod(scheduleTimer, pdMS_TO_TICKS64(delta * 1000), pdMS_TO_TICKS(1000)) != pdPASS)
+      if (xTimerChangePeriod(schedule_timer, pdMS_TO_TICKS64(delta * 1000), pdMS_TO_TICKS(1000)) != pdPASS)
         ESP_LOGE(TAG, "Failed to update schedule timer for next event.");
 
       // Pull the expected TOD from the timer ID
-      Schedule::time_of_day_t expectedTOD = (Schedule::time_of_day_t) pvTimerGetTimerID(scheduleTimer);
+      Schedule::time_of_day_t expected_tod = (Schedule::time_of_day_t) pvTimerGetTimerID(schedule_timer);
 
       // Save the "event ID" of the next event
-      vTimerSetTimerID(scheduleTimer, (void*) next);
+      vTimerSetTimerID(schedule_timer, (void*) next);
 
-      if (abs(tod - expectedTOD) > Schedule::MAX_SCHEDULE_ERROR && expectedTOD != Schedule::INVALID_TOD) // Ignore init conditions
+      if (abs(tod - expected_tod) > Schedule::MAX_SCHEDULE_ERROR && expected_tod != Schedule::INVALID_TOD) // Ignore init conditions
         ESP_LOGW(TAG, "Expected TOD and actual TOD differ by more than %d seconds.", Schedule::MAX_SCHEDULE_ERROR);
 
       // Execute state changes for TOD
-      for (auto pair : schedule[expectedTOD])
+      for (auto pair : schedule[expected_tod])
       {
         ESP_LOGI(TAG, "Setting channel %d to %g", pair.first, pair.second);
         LEDC::set_intensity((ledc_channel_t) pair.first, pair.second);
@@ -212,6 +212,6 @@ extern "C" void app_main()
 */
 void signal_event(MAIN_EVENT event)
 {
-  if (mainEventGroup != NULL)
-    xEventGroupSetBits(mainEventGroup, event);
+  if (event_group != NULL)
+    xEventGroupSetBits(event_group, event);
 }

@@ -213,8 +213,8 @@ static nlohmann::json get_schedule_json()
   // Create & populate schedule object
   nlohmann::json schedule = nlohmann::json::object();
 
-  std::map<std::string, std::string> scheduleJson = NVS::get_schedule_json();
-  for (auto& kv : scheduleJson)
+  std::map<std::string, std::string> schedule_json = NVS::get_schedule_json();
+  for (auto& kv : schedule_json)
     schedule[kv.first] = nlohmann::json::parse(kv.second);
 
   return schedule;
@@ -264,7 +264,7 @@ std::string JSON::get_settings()
 /**
   @brief  Parse JSON representing a single entry of the schedule into a C++ type
   
-  @param  jEntry JSON string represenation of entry
+  @param  jEntry JSON string representation of entry
   @retval Schedule::entry_t
 */
 Schedule::entry_t JSON::parse_schedule_entry(const std::string& jEntry)

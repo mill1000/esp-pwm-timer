@@ -81,10 +81,10 @@ static void httpEventHandler(struct mg_connection* nc, int ev, void* ev_data)
         // Parse settings JSON and reset buffer
         bool success = JSON::parse_settings(buffer);
 
-        const char* errorString = success ? "Update succesful." : "JSON parse failed.";
-        uint16_t returnCode = success ? 200 : 400;
+        const char* error_string = success ? "Update successful." : "JSON parse failed.";
+        uint16_t return_code = success ? 200 : 400;
 
-        httpSendResponse(nc, returnCode, errorString);
+        httpSendResponse(nc, return_code, error_string);
       }
       else
       {
@@ -130,8 +130,8 @@ static void httpEventHandler(struct mg_connection* nc, int ev, void* ev_data)
     case MG_EV_TIMER:
     {
       // Reset time to trigger
-      double eventTime = *((double*) ev_data);
-      mg_set_timer(nc, eventTime + ws_interval);
+      double event_time = *((double*) ev_data);
+      mg_set_timer(nc, event_time + ws_interval);
 
       std::string status = JSON::get_status();
 

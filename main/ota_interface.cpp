@@ -45,10 +45,10 @@ OTA::Handle* OTA::construct_handle(const std::string& target)
 esp_err_t OTA::AppHandle::cleanup()
 {
   // Remove timeout timer
-  if (this->timeoutTimer != NULL)
+  if (this->timeout_timer != NULL)
   {
-    if (xTimerDelete(this->timeoutTimer, 0) == pdPASS)
-      this->timeoutTimer = NULL;
+    if (xTimerDelete(this->timeout_timer, 0) == pdPASS)
+      this->timeout_timer = NULL;
     else
       ESP_LOGW(TAG, "Failed to delete timeout timer.");
   }
@@ -74,7 +74,7 @@ esp_err_t OTA::AppHandle::cleanup()
 }
 
 /**
-  @brief  Initalize an OTA update. Checks paritions and begins OTA process.
+  @brief  Initialize an OTA update. Checks partitions and begins OTA process.
   
   @param  none
   @retval esp_err_t
@@ -85,7 +85,7 @@ esp_err_t OTA::AppHandle::start()
   if (ota.state != OTA::STATE_IDLE)
     return ESP_ERR_INVALID_STATE;
 
-  // Check that the active and boot parition are the same otherwise we might be trying to double update
+  // Check that the active and boot partition are the same otherwise we might be trying to double update
   const esp_partition_t* boot = esp_ota_get_boot_partition();
   const esp_partition_t* active = esp_ota_get_running_partition();
   if (boot != active)
@@ -109,7 +109,7 @@ esp_err_t OTA::AppHandle::start()
   }
 
   // Create a timer that will handle timeout events
-  this->timeoutTimer = xTimerCreate("OTATimeout", pdMS_TO_TICKS(5000), false, (void*)this, [](TimerHandle_t t){
+  this->timeout_timer = xTimerCreate("OTATimeout", pdMS_TO_TICKS(5000), false, (void*)this, [](TimerHandle_t t){
     ESP_LOGW(TAG, "Timeout during update. Performing cleanup...");
     OTA::Handle* handle = (OTA::Handle*) pvTimerGetTimerID(t);
     if (handle != nullptr)
@@ -117,7 +117,7 @@ esp_err_t OTA::AppHandle::start()
   });
 
   // Start the timer
-  if (xTimerStart(this->timeoutTimer, pdMS_TO_TICKS(100)) != pdPASS)
+  if (xTimerStart(this->timeout_timer, pdMS_TO_TICKS(100)) != pdPASS)
     ESP_LOGE(TAG, "Failed to start timeout timer.");
 
   ota.state = OTA::STATE_IN_PROGRESS;
@@ -133,7 +133,7 @@ esp_err_t OTA::AppHandle::start()
 */
 esp_err_t OTA::AppHandle::write(uint8_t* data, uint16_t length)
 {
-  // Check for non-initalize or error state
+  // Check for non-initialize or error state
   if (ota.state != OTA::STATE_IN_PROGRESS)
     return ESP_ERR_INVALID_STATE;
 
@@ -146,14 +146,14 @@ esp_err_t OTA::AppHandle::write(uint8_t* data, uint16_t length)
   }
   
   // Reset timeout timer
-  if (this->timeoutTimer != NULL)
-    xTimerReset(this->timeoutTimer, pdMS_TO_TICKS(10));
+  if (this->timeout_timer != NULL)
+    xTimerReset(this->timeout_timer, pdMS_TO_TICKS(10));
 
   return ESP_OK;
 }
 
 /**
-  @brief  Finalize an OTA update. Sets boot paritions and returns callback to reboot
+  @brief  Finalize an OTA update. Sets boot partitions and returns callback to reboot
   
   @param  none
   @retval OTA::end_result_t
@@ -192,7 +192,7 @@ OTA::end_result_t OTA::AppHandle::end()
 }
 
 /**
-  @brief  Helper function to cleanup OTA update of SPIFSS partion at end or in case of error
+  @brief  Helper function to cleanup OTA update of SPIFFS partion at end or in case of error
   
   @param  none
   @retval esp_err_t
@@ -200,10 +200,10 @@ OTA::end_result_t OTA::AppHandle::end()
 esp_err_t OTA::SpiffsHandle::cleanup()
 {
   // Remove timeout timer
-  if (this->timeoutTimer != NULL)
+  if (this->timeout_timer != NULL)
   {
-    if (xTimerDelete(this->timeoutTimer, 0) == pdPASS)
-      this->timeoutTimer = NULL;
+    if (xTimerDelete(this->timeout_timer, 0) == pdPASS)
+      this->timeout_timer = NULL;
     else
       ESP_LOGW(TAG, "Failed to delete timeout timer.");
   }
@@ -222,7 +222,7 @@ esp_err_t OTA::SpiffsHandle::cleanup()
 }
 
 /**
-  @brief  Initalize an OTA update of the SPIFFS partition.
+  @brief  Initialize an OTA update of the SPIFFS partition.
   
   @param  none
   @retval esp_err_t
@@ -263,7 +263,7 @@ esp_err_t OTA::SpiffsHandle::start()
   this->partition = part;
 
   // Create a timer that will handle timeout events
-  this->timeoutTimer = xTimerCreate("OTATimeout", pdMS_TO_TICKS(5000), false, (void*)this, [](TimerHandle_t t){
+  this->timeout_timer = xTimerCreate("OTATimeout", pdMS_TO_TICKS(5000), false, (void*)this, [](TimerHandle_t t){
     ESP_LOGW(TAG, "Timeout during update. Performing cleanup...");
     OTA::Handle* handle = (OTA::Handle*) pvTimerGetTimerID(t);
     if (handle != nullptr)
@@ -271,7 +271,7 @@ esp_err_t OTA::SpiffsHandle::start()
   });
 
   // Start the timer
-  if (xTimerStart(this->timeoutTimer, pdMS_TO_TICKS(100)) != pdPASS)
+  if (xTimerStart(this->timeout_timer, pdMS_TO_TICKS(100)) != pdPASS)
     ESP_LOGE(TAG, "Failed to start timeout timer.");
 
   ota.state = OTA::STATE_IN_PROGRESS;
@@ -287,7 +287,7 @@ esp_err_t OTA::SpiffsHandle::start()
 */
 esp_err_t OTA::SpiffsHandle::write(uint8_t* data, uint16_t length)
 {
-  // Check for non-initalize or error state
+  // Check for non-initialize or error state
   if (ota.state != OTA::STATE_IN_PROGRESS)
     return ESP_ERR_INVALID_STATE;
 
@@ -303,8 +303,8 @@ esp_err_t OTA::SpiffsHandle::write(uint8_t* data, uint16_t length)
   this->written += length;
   
   // Reset timeout timer
-  if (this->timeoutTimer != NULL)
-    xTimerReset(this->timeoutTimer, pdMS_TO_TICKS(10));
+  if (this->timeout_timer != NULL)
+    xTimerReset(this->timeout_timer, pdMS_TO_TICKS(10));
 
   return ESP_OK;
 }

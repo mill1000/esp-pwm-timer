@@ -20,7 +20,7 @@ static struct
 } active_configs;
 
 /**
-  @brief  Initalize the LEDC peripheral and enable fade function
+  @brief  Initialize the LEDC peripheral and enable fade function
   
   @param  none
   @retval none

@@ -26,7 +26,7 @@ static void helper_callback(const std::string& name, const std::string& key, esp
 }
 
 /**
-  @brief  Open the NVS namespace and initalize our parameter object
+  @brief  Open the NVS namespace and initialize our parameter object
   
   @param  none
   @retval none
@@ -67,7 +67,7 @@ void NVS::init()
 }
 
 /**
-  @brief  Check rquired configuration items and reset if empty or not found
+  @brief  Check required configuration items and reset if empty or not found
   
   @param  none
   @retval none
@@ -248,14 +248,14 @@ std::map<std::string, std::string> NVS::get_schedule_json()
   // Find all keys in the schedule NVS
   const std::vector<std::string> keys = schedule.nvs_find(NVS_TYPE_STR);
 
-  std::map<std::string, std::string> scheduleJson;
+  std::map<std::string, std::string> schedule_json;
   for (auto& k : keys)
   {
-    if (schedule.nvs_get<std::string>(k, scheduleJson[k]) != ESP_OK)
+    if (schedule.nvs_get<std::string>(k, schedule_json[k]) != ESP_OK)
       ESP_LOGW(TAG, "Failed to get NVS schedule entry for '%s'", k.c_str());
   }
 
-  return scheduleJson;
+  return schedule_json;
 }
 
 /**

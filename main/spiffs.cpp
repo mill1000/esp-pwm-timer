@@ -11,7 +11,7 @@
 #define TAG "SPIFFS"
 
 /**
-  @brief  Initalize and mount the SPIFFS
+  @brief  Initialize and mount the SPIFFS
 
   @param  none
   @retval none

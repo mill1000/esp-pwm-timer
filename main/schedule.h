@@ -116,7 +116,7 @@ class Schedule
 
       time_t now = local_tm->tm_hour * 3600 + local_tm->tm_min * 60 + local_tm->tm_sec;
 
-      return now % seconds_per_day;
+      return now % SECONDS_PER_DAY;
     }
 
     static time_of_day_t get_time_of_day(const std::string& tod)
@@ -126,7 +126,7 @@ class Schedule
 
       time_t time = timeinfo.tm_hour * 3600 + timeinfo.tm_min * 60;
 
-      return time % seconds_per_day;
+      return time % SECONDS_PER_DAY;
     }
 
     static time_of_day_t delta(time_of_day_t next, time_of_day_t prev)
@@ -134,11 +134,11 @@ class Schedule
       if (next == INVALID_TOD || prev == INVALID_TOD)
         return INVALID_TOD;
 
-      return ((next - prev) + seconds_per_day) % seconds_per_day;
+      return ((next - prev) + SECONDS_PER_DAY) % SECONDS_PER_DAY;
     }
 
   private:
-    static constexpr int seconds_per_day = 86400;
+    static constexpr int SECONDS_PER_DAY = 86400;
 
     std::map<time_of_day_t, entry_t> schedule;
 };
