@@ -1,3 +1,6 @@
+# A Better Idea
+Use [ESPHome](https://esphome.io/). It's LEDC and Light components can be combined with HomeAssistant and/or built-in automation to achieve much of what this project tried to do. 
+
 # ESP PWM
 A PWM timer/scheduler for ESP32 devices. Designed to control aquarium lighting on a daily schedule. Up to 8 channels of independent control, 4 independent PWM frequencies and schedule granularity down to the minute.
 
